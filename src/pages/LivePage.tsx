@@ -11,7 +11,8 @@ const LivePage = () => {
   const [viewerCount, setViewerCount] = useState(8543);
   const [chatMessage, setChatMessage] = useState("");
   const [showChat, setShowChat] = useState(true);
-  const [selectedQuality, setSelectedQuality] = useState("720p");
+  const [selectedQuality, setSelectedQuality] = useState("720p HD");
+  const [iframeError, setIframeError] = useState(false);
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [prayerRequest, setPrayerRequest] = useState("");
 
@@ -69,11 +70,11 @@ const LivePage = () => {
     }
   ];
 
- const streamQualities = [
-  { quality: "1080p HD", viewers: "5.2K", bandwidth: "High", videoId: "_Ggh3GmOY5A" },
-  { quality: "720p HD", viewers: "2.8K", bandwidth: "Medium", videoId: "_Ggh3GmOY5A" },
-  { quality: "480p", viewers: "1.1K", bandwidth: "Low", videoId: "_Ggh3GmOY5A" },
-  { quality: "Audio Only", viewers: "892", bandwidth: "Minimal", videoId: "_Ggh3GmOY5A" }
+const streamQualities = [
+  { quality: "1080p HD", viewers: "5.2K", bandwidth: "High", videoId: "MRu5yQN0t04" },
+  { quality: "720p HD", viewers: "2.8K", bandwidth: "Medium", videoId: "MRu5yQN0t04" },
+  { quality: "480p", viewers: "1.1K", bandwidth: "Low", videoId: "MRu5yQN0t04" },
+  { quality: "Audio Only", viewers: "892", bandwidth: "Minimal", videoId: "MRu5yQN0t04" }
 ];
 
 const [iframeKey, setIframeKey] = useState(0);
@@ -109,16 +110,36 @@ const handleQualityChange = (quality) => {
               <div className="relative">
                 {/* Video Player Area - YouTube Embed */}
                 <div className="aspect-video bg-black flex items-center justify-center relative">
-                  <iframe
-  key={iframeKey}
-  className="w-full h-full"
-  src={`https://www.youtube.com/embed/live/UCgJlc4AenFuOA6eRH94w4Ew`}
-  title="Sunday Service - Live"
-  frameBorder="0"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-  allowFullScreen
-></iframe>
-                  
+                  {/* Use the selected stream's videoId in a proper embed URL */}
+                  {(() => {
+                    const chosen = streamQualities.find(s => s.quality === selectedQuality) || streamQualities[1];
+                    const src = `https://www.youtube.com/embed/${chosen.videoId}?autoplay=1&mute=1`;
+                    return (
+                      <>
+                        <iframe
+                          key={iframeKey}
+                          className="w-full h-full"
+                          src={src}
+                          title="Sunday Service - Live"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; autoplay"
+                          allowFullScreen
+                          onLoad={() => setIframeError(false)}
+                          onError={() => setIframeError(true)}
+                        />
+
+                        {iframeError && (
+                          <div className="absolute inset-0 bg-black/70 z-20 flex flex-col items-center justify-center text-center p-4">
+                            <div className="text-white font-semibold mb-2">Unable to play the stream.</div>
+                            <div className="text-sm text-muted-foreground mb-4">An error occurred. Please try again later.</div>
+                            <div className="flex space-x-2">
+                              <Button size="sm" onClick={() => { setIframeKey(k => k + 1); setIframeError(false); }}>Retry</Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                   {/* Live Indicator */}
                   {isLive && (
                     <div className="absolute top-4 left-4 flex items-center space-x-2 z-10">
