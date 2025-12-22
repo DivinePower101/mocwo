@@ -50,7 +50,7 @@ const streamQualities = [
 
 const [iframeKey, setIframeKey] = useState(0);
 
-const handleQualityChange = (quality) => {
+const handleQualityChange = (quality: string) => {
   setSelectedQuality(quality);
   // Force iframe to reload by changing key
   setIframeKey(prev => prev + 1);
@@ -215,18 +215,18 @@ const handleQualityChange = (quality) => {
                 <CardContent className="flex flex-col flex-1 pb-0 overflow-hidden">
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto space-y-3 mb-4 py-4">
-                    {chatMessages.map((msg, index) => (
+                    {chatMessages.map((msg) => (
                       <div
-                        key={index}
+                        key={msg.id}
                         className={`p-2 rounded-lg text-sm transition-all ${
-                          msg.isHighlighted
+                          msg.is_highlighted
                             ? "bg-primary/10 border border-primary/20"
                             : "bg-muted/50 hover:bg-muted"
                         }`}
                       >
-                        <div className="font-semibold text-primary text-xs">{msg.user}</div>
+                        <div className="font-semibold text-primary text-xs">{msg.user_name}</div>
                         <div className="text-foreground text-sm">{msg.message}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{msg.time}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{new Date(msg.created_at).toLocaleTimeString()}</div>
                       </div>
                     ))}
                   </div>
@@ -237,7 +237,7 @@ const handleQualityChange = (quality) => {
                       placeholder="Type message..."
                       value={chatMessage}
                       onChange={(e) => setChatMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                       className="flex-1 text-sm"
                     />
                     <Button 
