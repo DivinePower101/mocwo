@@ -112,7 +112,7 @@ const handleQualityChange = (quality) => {
                   <iframe
   key={iframeKey}
   className="w-full h-full"
-  src={`https://www.youtube.com/embed/_Ggh3GmOY5A`}
+  src={`https://www.youtube.com/embed/live/UCgJlc4AenFuOA6eRH94w4Ew`}
   title="Sunday Service - Live"
   frameBorder="0"
   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

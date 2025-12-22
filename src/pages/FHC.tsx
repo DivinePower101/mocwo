@@ -155,7 +155,7 @@ export default function Fhc() {
             <a href="/about" className="mt-6 inline-block px-5 py-3 rounded border border-slate-200">Read Their Story</a>
           </div>
           <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow">
-            <img src={PAPS} alt="Uebert & BeBe Angel" className="w-full h-full object-cover max-w-full" />
+            <img src={PAPS} alt="PAPA & MAMA" className="w-full h-full object-cover max-w-full" />
           </div>
         </div>
       </section>

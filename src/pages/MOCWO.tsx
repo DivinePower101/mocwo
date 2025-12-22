@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { schools } from "@/data/schools";
 import CC from "@/assets/cc.jpeg";
 import { Book, Play, Download, Headphones, Mail, Phone, MapPin, Facebook, Instagram, Youtube, Zap, Target, Users, Globe } from "lucide-react";
 
@@ -113,14 +112,13 @@ const MOCWO = () => {
           </p>
 
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/schools">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white px-8 py-6 text-lg font-bold rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105"
-              >
-                🎓 Explore Schools
-              </Button>
-            </Link>
+            <Button
+              onClick={() => document.getElementById("people-reaching")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white px-8 py-6 text-lg font-bold rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105"
+            >
+              🎓 Explore Our Outreaches
+            </Button>
             <Link to="/give/mocwo">
               <Button
                 size="lg"
@@ -247,59 +245,61 @@ const MOCWO = () => {
         </div>
       </section>
 
-      {/* Schools Grid - Enhanced */}
-      <section className="py-24 bg-background">
+      {/* People We're Reaching Section */}
+      <section id="people-reaching" className="py-24 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black mb-4">
               <span className="bg-gradient-to-r from-blue-600 to-cyan-600 text-transparent bg-clip-text">
-                Schools We're Reaching
+                People We're Reaching
               </span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Institutions where lives are being transformed daily</p>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Explore the institutions and communities where lives are being transformed daily</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {schools.slice(0, 6).map((school, idx) => (
-              <Card key={school.id} className="border-0 shadow-card hover:shadow-divine transition-all duration-300 hover:-translate-y-2 group overflow-hidden">
-                <div className="h-24 bg-gradient-to-r from-blue-600 to-cyan-500 relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-10 text-4xl flex items-center justify-center">🎓</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
+            {/* Schools Link */}
+            <Link to="/schools">
+              <Card className="border-0 shadow-card hover:shadow-divine transition-all duration-300 hover:scale-105 group overflow-hidden cursor-pointer h-full">
+                <div className="h-32 bg-gradient-to-r from-blue-600 to-cyan-500 relative overflow-hidden flex items-center justify-center">
+                  <div className="text-6xl group-hover:scale-125 transition-transform">🏫</div>
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80"></div>
                 </div>
 
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
-                    {school.name}
+                <CardContent className="p-8 text-center">
+                  <h3 className="text-2xl font-bold mb-3 group-hover:text-blue-600 transition-colors">
+                    Schools
                   </h3>
-                  <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                    {school.description}
+                  <p className="text-muted-foreground mb-4">
+                    Discover the educational institutions we're impacting with the Gospel message and discipleship programs
                   </p>
-
-                  <div className="flex gap-2">
-                    <Link to={`/media/${school.id}`} className="flex-1">
-                      <Button 
-                        size="sm" 
-                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold"
-                      >
-                        📸 Media
-                      </Button>
-                    </Link>
-                    <Link to={`/report/${school.id}`} className="flex-1">
-                      <Button size="sm" variant="outline" className="w-full font-bold">
-                        📖 Report
-                      </Button>
-                    </Link>
-                  </div>
+                  <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold w-full">
+                    View Schools →
+                  </Button>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+            </Link>
 
-          <div className="text-center mt-12">
-            <Link to="/schools">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white px-8 py-6 rounded-full font-bold">
-                View All Schools →
-              </Button>
+            {/* Communities Link */}
+            <Link to="/communities">
+              <Card className="border-0 shadow-card hover:shadow-divine transition-all duration-300 hover:scale-105 group overflow-hidden cursor-pointer h-full">
+                <div className="h-32 bg-gradient-to-r from-cyan-600 to-blue-600 relative overflow-hidden flex items-center justify-center">
+                  <div className="text-6xl group-hover:scale-125 transition-transform">🌍</div>
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80"></div>
+                </div>
+
+                <CardContent className="p-8 text-center">
+                  <h3 className="text-2xl font-bold mb-3 group-hover:text-cyan-600 transition-colors">
+                    Communities
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Explore the neighborhoods and communities experiencing transformation through our outreach initiatives
+                  </p>
+                  <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold w-full">
+                    View Communities →
+                  </Button>
+                </CardContent>
+              </Card>
             </Link>
           </div>
         </div>

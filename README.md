@@ -71,3 +71,66 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Admin — Supabase setup
+
+Follow these steps to create an admin user for the site's admin panel:
+
+1. Open your Supabase project and go to **Authentication → Users**.
+2. Click **Invite user** or **Create new user** and create a user with the admin email you want to use (set a secure password).
+3. In the SQL editor (or via migrations), ensure there is a matching row in `public.admin_users` with the same email. A seed file is included at `supabase/migrations/20251221000000_seed_admin_user.sql`.
+
+Quick SQL example to run in Supabase SQL editor (replace the email):
+
+```sql
+INSERT INTO public.admin_users (email, password_hash, full_name, role, is_active)
+VALUES ('admin@example.com', 'placeholder', 'Site Administrator', 'admin', true)
+ON CONFLICT (email) DO NOTHING;
+```
+
+Notes:
+- The `admin_users` table is used for role checks; Supabase Auth stores actual passwords. Make sure the Auth user email matches the `admin_users.email` exactly.
+- After creating the Auth user and the `admin_users` row, sign in at `/admin` with the Auth email/password.
+- For production use, replace the placeholder and manage users securely via the Supabase Dashboard or Admin API.
+
+Quick create Auth user (Admin API)
+
+You can create the Supabase Auth user programmatically using the service_role key. Replace `${SUPABASE_URL}`, `${SERVICE_ROLE_KEY}`, `<ADMIN_EMAIL>` and `<ADMIN_PASSWORD>` with your project values.
+
+```bash
+# Create Supabase Auth user (requires service_role key)
+curl -X POST "${SUPABASE_URL}/auth/v1/admin/users" \
+  -H "apikey: ${SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"<ADMIN_EMAIL>","password":"<ADMIN_PASSWORD>","email_confirm":true}'
+```
+
+Once the Auth user exists and the `admin_users` row (see `supabase/migrations/20251221000000_seed_admin_user.sql`) contains the same email, you can sign in at `/admin` using the Auth credentials you created.
+
+IMPORTANT: Do NOT commit plaintext passwords into the repository or shared docs. Use secure channels to share credentials and rotate passwords immediately after first sign-in.
+
+### Admin creation endpoint (optional)
+
+If you'd rather create admin users programmatically, the project provides a protected server endpoint at `POST /api/create-admin`.
+
+Environment variables required on the server:
+- `SUPABASE_URL` — your Supabase project URL (e.g. https://xyz.supabase.co)
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service_role key (keep secret)
+- `ADMIN_CREATION_KEY` — a server-side secret used to protect the endpoint
+
+Example curl to create an admin (replace placeholders and use your `ADMIN_CREATION_KEY`):
+
+```bash
+curl -X POST https://your-server.example.com/api/create-admin \
+  -H "Content-Type: application/json" \
+  -H "x-admin-key: ${ADMIN_CREATION_KEY}" \
+  -d '{"email":"<ADMIN_EMAIL>","password":"<ADMIN_PASSWORD>","full_name":"<FULL_NAME>"}'
+```
+
+The endpoint will:
+- create the Supabase Auth user via the Admin API
+- insert a matching row into `public.admin_users`
+
+Security: keep `SUPABASE_SERVICE_ROLE_KEY` and `ADMIN_CREATION_KEY` in a secure server environment and never commit them.
+

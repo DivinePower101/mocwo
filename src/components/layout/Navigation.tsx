@@ -15,8 +15,11 @@ const Navigation = () => {
     { name: "Partnership", path: "/partnership" },
     { name: "MOCWO", path: "/mocwo" },
     { name: "Services", path: "/services" },
-    { name: "Contact", path: "/contact" },
-    { name: "Prayer", path: "/prayer-ai" }, // ✅ Prayer AI Page
+    // { name: "Live Streaming", path: "/live" },
+    // { name: "Contact", path: "/contact" },
+    // { name: "Prayer", path: "/prayer-ai" }, // ✅ Prayer AI Page
+    { name: "FHCI", path: "/fhc" }, // ✅ FHC Page
+    {name: "Rev.Prince", path: "/rev-prince-ministries"}, // ✅ Rev.Prince External Link
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -25,14 +28,14 @@ const Navigation = () => {
   if (location.pathname === "/fhc") return null;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border font-serif">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border font-medium">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-4">
             <img src={logo2} alt="MOCWO Logo" className="h-12 w-auto max-w-full" />
-            <span className="font-bold text-xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 bg-clip-text text-transparent font-serif">
+            <span className="font-bold text-xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 bg-clip-text text-transparent">
               MOCWO
             </span>
           </Link>
@@ -49,15 +52,17 @@ const Navigation = () => {
                     : "text-muted-foreground hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-400 hover:bg-clip-text hover:text-transparent"
                   }`}
               >
-                <span className="font-serif">{item.name}</span>
+                <span>{item.name}</span>
                 {isActive(item.path) && (
                   <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full" />
                 )}
               </Link>
             ))}
-            <Button variant="outline" size="sm" className="ml-4 border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-white">
-              Admin
-            </Button>
+            <Link to="/admin" className="ml-4">
+              <Button variant="outline" size="sm" className="border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-white">
+                Admin
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile menu */}
@@ -85,9 +90,11 @@ const Navigation = () => {
                 </Link>
               ))}
               <div className="px-4 pt-2">
-                <Button variant="outline" size="sm" className="w-full border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-white">
-                  Login
-                </Button>
+                <Link to="/admin">
+                  <Button variant="outline" size="sm" className="w-full border-blue-500 text-blue-600 hover:bg-blue-600 hover:text-white">
+                    Admin
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

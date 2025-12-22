@@ -24,6 +24,7 @@ import FHC from "./pages/FHC";
 import RevPrinceMinistries from "./pages/RevPrinceMinistries";
 import PrayerAI from "./pages/PrayerAI";
 import SchoolVisits from "./pages/SchoolVisits";
+import Communities from "./pages/Communities";
 import MediaPage from "./pages/MediaPage";
 import ReportPage from "./pages/ReportPage";
 import News from "./pages/News";
@@ -63,6 +64,7 @@ export default function App() {
 
             {/* Schools + Media + Report */}
             <Route path="/schools" element={<SchoolVisits />} />
+            <Route path="/communities" element={<Communities />} />
             <Route path="/media/:id" element={<MediaPage />} />
             <Route path="/report/:id" element={<ReportPage />} />
 

@@ -6,8 +6,8 @@ import news, { NewsItem } from "@/data/news";
 const News = () => {
   return (
     <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-6">News & Stories</h1>
+      <div className="container mx-auto px-4 pt-16">
+        <h1 className="text-5xl font-bold tracking-tight mb-8">News and Events</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {news.map((item: NewsItem) => (
             <Card key={item.id} className="border-0 shadow-card hover:shadow-divine transition-all duration-300">

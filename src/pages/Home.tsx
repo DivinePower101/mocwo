@@ -63,7 +63,47 @@ const Home = () => {
     ctaText: "Join Our Family", 
     ctaLink: "/membership",
     gradient: "from-blue-950 via-blue-800 to-cyan-600"
-  }
+  },
+  // {
+  //   id: 6,
+  //   title: "HIGISA GADOLA",
+  //   subtitle: "The Great Encounter",
+  //   description: "Join us for a powerful encounter with God as we gather from December 20-24. Experience revival, transformation, and the presence of the Holy Spirit in a life-changing event.",
+  //   image: hero1,
+  //   ctaText: "Join Us",
+  //   ctaLink: "/membership",
+  //   gradient: "from-red-950 via-red-800 to-orange-600"
+  // },
+  // {
+  //   id: 7,
+  //   title: "REV. PRINCE'S 20 YEARS ANNIVERSARY",
+  //   subtitle: "December 21st",
+  //   description: "Celebrate two decades of apostolic ministry and divine calling. Join us as we honor the faithful service of Rev. Prince Bediako Appau in spreading the gospel and transforming lives.",
+  //   image: hero2,
+  //   ctaText: "Celebrate With Us",
+  //   ctaLink: "/rev-prince-ministries",
+  //   gradient: "from-purple-950 via-purple-800 to-pink-600"
+  // },
+  // {
+  //   id: 8,
+  //   title: "PNEUMATIKOS WATCH NIGHT",
+  //   subtitle: "A Night of Spirit Fire and Revival",
+  //   description: "Join us in June 2026 at the CCB Auditorium for an unforgettable night of worship, prayer, and revival. Experience the fire of the Holy Spirit as we cry out for restoration and renewal.",
+  //   image: hero3,
+  //   ctaText: "Mark Your Calendar",
+  //   ctaLink: "/membership",
+  //   gradient: "from-yellow-950 via-yellow-800 to-orange-500"
+  // },
+  // {
+  //   id: 9,
+  //   title: "ATWEA EASTER CAMP",
+  //   subtitle: "A Season of Renewal",
+  //   description: "Experience an incredible Easter season at the Atwea Camp. Join fellow believers for discipleship, fellowship, worship, and spiritual growth in a transformed environment.",
+  //   image: hero6,
+  //   ctaText: "Register Now",
+  //   ctaLink: "/membership",
+  //   gradient: "from-green-950 via-green-800 to-emerald-600"
+  // }
 ];
 
   // ✅ Correct Order: FHC → Rev Prince → Offering → Partnership
@@ -75,10 +115,10 @@ const Home = () => {
   ];
 
   const features = [
-    { title: "Live Streaming", description: "Join our services from anywhere in the world", icon: "📺" },
-    { title: "Prayer Requests", description: "Submit your prayer needs and receive support", icon: "🙏" },
-    { title: "Community Outreach", description: "Making a difference in our local and global communities", icon: "🌍" },
-    { title: "Biblical Resources", description: "Access sermons, books, and study materials", icon: "📖" }
+    { title: "Live Streaming", description: "Join our services from anywhere in the world", icon: "📺", link: "/live" },
+    { title: "Prayer Request", description: "Submit your prayer needs and receive support", icon: "🙏", link: "/Prayer-ai"},
+    { title: "Evangelical Outreach", description: "Making a difference in our local and global communities", icon: "🌍", link: "/MOCWO" },
+    { title: "Resources", description: "Access sermons, books, and study materials", icon: "📖", link: "/resources" }
   ];
 
   // `news` imported from src/data/news
@@ -87,6 +127,40 @@ const Home = () => {
     <div className="min-h-screen flex flex-col">
       {/* Hero Carousel */}
       <HeroCarousel slides={carouselSlides} />
+
+      {/* News Feed Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold">News & Events</h2>
+            <Link to="/news" className="text-sm bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-400 hover:underline">
+              View All News
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Featured article carousel */}
+            <div className="lg:col-span-2">
+              <NewsCarousel slides={news} height={360} />
+            </div>
+
+            {/* Recent list */}
+            <div className="space-y-4">
+              {news.slice(1, 3).map((item) => (
+                <Card key={item.id} className="flex items-start gap-4 border-0 shadow-card">
+                  <img src={item.image} alt={item.title} className="max-w-full h-auto object-cover rounded-l-md w-28" />
+                  <CardContent className="p-4">
+                    <div className="text-xs text-muted-foreground">{item.date}</div>
+                    <h4 className="text-lg font-semibold mb-1">{item.title}</h4>
+                    <p className="text-sm text-muted-foreground mb-2">{item.excerpt}</p>
+                    <Link to={item.link} className="text-sm text-blue-600 hover:underline">Read more →</Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Quick Actions Section */}
       <section className="py-16 bg-background">
@@ -108,40 +182,6 @@ const Home = () => {
                 </Link>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* News Feed Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold">Latest News</h2>
-            <Link to="/news" className="text-sm bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-400 hover:underline">
-              View All News
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Featured article carousel */}
-            <div className="lg:col-span-2">
-              <NewsCarousel slides={news} height={360} />
-            </div>
-
-            {/* Recent list */}
-            <div className="space-y-4">
-              {news.slice(1).map((item) => (
-                <Card key={item.id} className="flex items-start gap-4 border-0 shadow-card">
-                  <img src={item.image} alt={item.title} className="max-w-full h-auto object-cover rounded-l-md w-28" />
-                  <CardContent className="p-4">
-                    <div className="text-xs text-muted-foreground">{item.date}</div>
-                    <h4 className="text-lg font-semibold mb-1">{item.title}</h4>
-                    <p className="text-sm text-muted-foreground mb-2">{item.excerpt}</p>
-                    <Link to={item.link} className="text-sm text-blue-600 hover:underline">Read more →</Link>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </div>
         </div>
       </section>
@@ -178,13 +218,15 @@ const Home = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center border-0 shadow-card hover:shadow-divine transition-all duration-300 hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="text-4xl mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
+              <Link key={index} to={feature.link || "#"} className="no-underline">
+                <Card className="text-center border-0 shadow-card hover:shadow-divine transition-all duration-300 hover:scale-105 cursor-pointer h-full">
+                  <CardContent className="p-6">
+                    <div className="text-4xl mb-4">{feature.icon}</div>
+                    <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                    <p className="text-muted-foreground">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
