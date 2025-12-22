@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Play, Users, MessageSquare, Heart, Settings, Maximize, Volume2, Share, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const LivePage = () => {
   const [isLive, setIsLive] = useState(true);
@@ -16,38 +17,8 @@ const LivePage = () => {
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [prayerRequest, setPrayerRequest] = useState("");
 
-  const chatMessages = [
-    {
-      user: "Grace M.",
-      message: "Praise God! This message is exactly what I needed to hear today 🙏",
-      time: "2 min ago",
-      isHighlighted: false
-    },
-    {
-      user: "John K.",
-      message: "Praying for everyone watching from Kenya. God bless!",
-      time: "3 min ago",
-      isHighlighted: false
-    },
-    {
-      user: "Pastor Assistant",
-      message: "Welcome everyone! Please share your prayer requests in the chat",
-      time: "5 min ago",
-      isHighlighted: true
-    },
-    {
-      user: "Sarah L.",
-      message: "Thank you Pastor for this powerful word! Lives are being changed",
-      time: "7 min ago",
-      isHighlighted: false
-    },
-    {
-      user: "Michael R.",
-      message: "Watching from South Africa. The presence of God is so strong! 🔥",
-      time: "10 min ago",
-      isHighlighted: false
-    }
-  ];
+  const [chatMessages, setChatMessages] = useState<Array<{id:string;user_name:string;message:string;created_at:string;is_highlighted:boolean}>>([]);
+  const [displayName, setDisplayName] = useState<string>("Guest");
 
   const upcomingServices = [
     {
@@ -86,11 +57,56 @@ const handleQualityChange = (quality) => {
 };
 
   const handleSendMessage = () => {
-    if (chatMessage.trim()) {
-      console.log("Sending message:", chatMessage);
+    const text = chatMessage.trim();
+    if (!text) return;
+    const payload = {
+      user_name: displayName,
+      message: text,
+    };
+    (async () => {
+      const { error } = await supabase.from("live_messages").insert([payload]);
+      if (error) console.error("Failed to send message:", error);
       setChatMessage("");
-    }
+    })();
   };
+
+  useEffect(() => {
+    // generate or reuse a guest display name
+    let name = localStorage.getItem("moc_display_name");
+    if (!name) {
+      name = `Guest-${Math.floor(Math.random() * 9000) + 1000}`;
+      localStorage.setItem("moc_display_name", name);
+    }
+    setDisplayName(name);
+
+    let mounted = true;
+
+    const loadRecent = async () => {
+      const { data, error } = await supabase
+        .from("live_messages")
+        .select("id,user_name,message,created_at,is_highlighted")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) return console.error("Error loading messages:", error);
+      if (!mounted) return;
+      setChatMessages((data || []).reverse() as any);
+    };
+
+    loadRecent();
+
+    const channel = supabase
+      .channel("public:live_messages")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "live_messages" }, (payload) => {
+        const msg = payload.new;
+        setChatMessages((prev) => [...prev, msg]);
+      })
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handlePrayerRequest = () => {
     if (prayerRequest.trim()) {
