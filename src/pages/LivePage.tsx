@@ -4,8 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Play, Users, MessageSquare, Heart, Settings, Maximize, Volume2, Share, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+
+// YouTube Configuration
+const YOUTUBE_CHANNEL_ID = import.meta.env.VITE_YOUTUBE_CHANNEL_ID || "";
+const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || "";
+
+// Fallback video link if YouTube API is not configured
+const FALLBACK_VIDEO_URL = "https://www.youtube.com/watch?v=2AXtwCNMVKc";
 
 const LivePage = () => {
   const [isLive, setIsLive] = useState(true);
@@ -16,9 +23,47 @@ const LivePage = () => {
   const [iframeError, setIframeError] = useState(false);
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [prayerRequest, setPrayerRequest] = useState("");
+  const [isLoadingLiveStream, setIsLoadingLiveStream] = useState(false);
 
   const [chatMessages, setChatMessages] = useState<Array<{id:string;user_name:string;message:string;created_at:string;is_highlighted:boolean}>>([]);
   const [displayName, setDisplayName] = useState<string>("Guest");
+
+  // Function to fetch current live video from YouTube API
+  const fetchCurrentLiveVideo = async () => {
+    if (!YOUTUBE_CHANNEL_ID || !YOUTUBE_API_KEY) {
+      console.warn("YouTube API credentials not configured");
+      return null;
+    }
+
+    setIsLoadingLiveStream(true);
+    try {
+      const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+      searchUrl.searchParams.set("part", "snippet");
+      searchUrl.searchParams.set("channelId", YOUTUBE_CHANNEL_ID);
+      searchUrl.searchParams.set("eventType", "live");
+      searchUrl.searchParams.set("type", "video");
+      searchUrl.searchParams.set("key", YOUTUBE_API_KEY);
+      searchUrl.searchParams.set("maxResults", "1");
+      searchUrl.searchParams.set("order", "date");
+
+      const response = await fetch(searchUrl.toString());
+      const data = await response.json();
+
+      if (data.items && data.items.length > 0) {
+        const videoId = data.items[0].id.videoId;
+        console.log("Found live video:", videoId);
+        return videoId;
+      }
+
+      console.log("No live video currently streaming");
+      return null;
+    } catch (error) {
+      console.error("Failed to fetch live video from YouTube:", error);
+      return null;
+    } finally {
+      setIsLoadingLiveStream(false);
+    }
+  };
 
   const upcomingServices = [
     {
@@ -42,18 +87,112 @@ const LivePage = () => {
   ];
 
 const streamQualities = [
-  { quality: "1080p HD", viewers: "5.2K", bandwidth: "High", videoId: "MRu5yQN0t04" },
-  { quality: "720p HD", viewers: "2.8K", bandwidth: "Medium", videoId: "MRu5yQN0t04" },
-  { quality: "480p", viewers: "1.1K", bandwidth: "Low", videoId: "MRu5yQN0t04" },
-  { quality: "Audio Only", viewers: "892", bandwidth: "Minimal", videoId: "MRu5yQN0t04" }
+  { quality: "1080p HD", viewers: "5.2K", bandwidth: "High", videoId: "yNB1h2ubyYM" },
+  { quality: "720p HD", viewers: "2.8K", bandwidth: "Medium", videoId: "yNB1h2ubyYM" },
+  { quality: "480p", viewers: "1.1K", bandwidth: "Low", videoId: "yNB1h2ubyYM" },
+  { quality: "Audio Only", viewers: "892", bandwidth: "Minimal", videoId: "yNB1h2ubyYM" }
 ];
 
 const [iframeKey, setIframeKey] = useState(0);
+const [selectedVideoId, setSelectedVideoId] = useState<string | null>(streamQualities[1].videoId);
+const [externalSource, setExternalSource] = useState<string | null>(null);
+const [searchParams] = useSearchParams();
+const [iframeErrorHandled, setIframeErrorHandled] = useState(false);
+const [pasteLink, setPasteLink] = useState("");
+
+// Helper: extract YouTube video id from various URL formats
+const getYouTubeVideoId = (url: string) => {
+  try {
+    // direct id
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+      // youtu.be short links
+      const short = url.match(/youtu\.be\/([-_a-zA-Z0-9]{11})/);
+    if (short) return short[1];
+    // watch?v= links
+    const watch = url.match(/[?&]v=([-_a-zA-Z0-9]{11})/);
+    if (watch) return watch[1];
+    // embed/ links
+    const embed = url.match(/embed\/([-_a-zA-Z0-9]{11})/);
+    if (embed) return embed[1];
+      // live/<id> links
+      const live = url.match(/live\/([-_a-zA-Z0-9]{11})/);
+      if (live) return live[1];
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const extractChannelHandle = (url: string) => {
+  // get @handle from urls like https://www.youtube.com/@handle
+  const m = url.match(/youtube\.com\/(?:@[-_a-zA-Z0-9]+)/);
+  if (!m) return null;
+  const handle = m[0].split('/').pop();
+  return handle || null;
+};
 
 const handleQualityChange = (quality: string) => {
   setSelectedQuality(quality);
   // Force iframe to reload by changing key
   setIframeKey(prev => prev + 1);
+};
+
+// read optional `videoId` or `source` query params to pick a stream
+useEffect(() => {
+  const vid = searchParams.get("videoId");
+  const source = searchParams.get("source");
+  if (vid) {
+    setSelectedVideoId(vid);
+    setExternalSource(null);
+    setIframeKey(k => k + 1);
+    return;
+  }
+  if (source) {
+    const decoded = decodeURIComponent(source);
+    const id = getYouTubeVideoId(decoded);
+    if (id) {
+      setSelectedVideoId(id);
+      setExternalSource(null);
+      setIframeKey(k => k + 1);
+      return;
+    }
+    // try channel handle -> use live_stream embed param (may work for channel handles)
+    const handle = extractChannelHandle(decoded);
+    if (handle) {
+      // store the channel handle in externalSource so UI can attempt channel embed
+      setExternalSource(`channel:${handle}`);
+      setSelectedVideoId(null);
+      setIframeKey(k => k + 1);
+      return;
+    }
+
+    // unknown external source; show a link to open externally
+    setExternalSource(decoded);
+    setSelectedVideoId(null);
+    setIframeKey(k => k + 1);
+  }
+}, [searchParams]);
+
+const handleLoadLink = (link?: string) => {
+  const raw = (link ?? pasteLink).trim();
+  if (!raw) return;
+  const id = getYouTubeVideoId(raw);
+  if (id) {
+    setSelectedVideoId(id);
+    setExternalSource(null);
+  } else {
+    const handle = extractChannelHandle(raw);
+    if (handle) {
+      setExternalSource(`channel:${handle}`);
+      setSelectedVideoId(null);
+    } else {
+      setExternalSource(raw);
+      setSelectedVideoId(null);
+    }
+  }
+  setIframeKey(k => k + 1);
+  setIframeError(false);
+  setIframeErrorHandled(false);
 };
 
   const handleSendMessage = () => {
@@ -64,11 +203,32 @@ const handleQualityChange = (quality: string) => {
       message: text,
     };
     (async () => {
-      const { error } = await supabase.from("live_messages").insert([payload]);
+      const { error } = await supabase.from("live_messages" as any).insert([payload]);
       if (error) console.error("Failed to send message:", error);
       setChatMessage("");
     })();
   };
+
+  // Fetch live video on component mount
+  useEffect(() => {
+    const initializeLiveStream = async () => {
+      const liveVideoId = await fetchCurrentLiveVideo();
+      if (liveVideoId) {
+        setSelectedVideoId(liveVideoId);
+        setExternalSource(null);
+        setIframeKey(k => k + 1);
+        console.log("Live stream initialized with video:", liveVideoId);
+      } else {
+        console.log("No live stream detected, using default or fallback");
+      }
+    };
+
+    initializeLiveStream();
+
+    // Refresh live status every 2 minutes
+    const interval = setInterval(initializeLiveStream, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     // generate or reuse a guest display name
@@ -83,13 +243,13 @@ const handleQualityChange = (quality: string) => {
 
     const loadRecent = async () => {
       const { data, error } = await supabase
-        .from("live_messages")
+        .from("live_messages" as any)
         .select("id,user_name,message,created_at,is_highlighted")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) return console.error("Error loading messages:", error);
       if (!mounted) return;
-      setChatMessages((data || []).reverse() as any);
+      setChatMessages(((data as unknown || []) as Array<{id:string;user_name:string;message:string;created_at:string;is_highlighted:boolean}>).reverse());
     };
 
     loadRecent();
@@ -97,7 +257,7 @@ const handleQualityChange = (quality: string) => {
     const channel = supabase
       .channel("public:live_messages")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "live_messages" }, (payload) => {
-        const msg = payload.new;
+        const msg = payload.new as {id:string;user_name:string;message:string;created_at:string;is_highlighted:boolean};
         setChatMessages((prev) => [...prev, msg]);
       })
       .subscribe();
@@ -124,33 +284,93 @@ const handleQualityChange = (quality: string) => {
           <div className="lg:col-span-3 order-1">
             <Card className="border-0 shadow-divine bg-black overflow-hidden">
               <div className="relative">
+                {/* Paste a stream URL here to load into the player */}
+                <div className="p-3 border-b border-border bg-background/5 flex items-center gap-2">
+                  <Input
+                    placeholder="Paste stream URL (YouTube/TikTok/etc.)"
+                    value={pasteLink}
+                    onChange={(e) => setPasteLink(e.target.value)}
+                    className="flex-1 text-sm"
+                    onKeyDown={(e) => e.key === "Enter" && handleLoadLink()}
+                  />
+                  <Button size="sm" onClick={() => handleLoadLink()}>Load</Button>
+                </div>
+
                 {/* Video Player Area - YouTube Embed */}
                 <div className="aspect-video bg-black flex items-center justify-center relative">
                   {/* Use the selected stream's videoId in a proper embed URL */}
                   {(() => {
-                    const chosen = streamQualities.find(s => s.quality === selectedQuality) || streamQualities[1];
-                    const src = `https://www.youtube.com/embed/${chosen.videoId}?autoplay=1&mute=1`;
+                    // prefer an explicitly selected video id (via query param or clicking a link)
+                    let src: string | null = null;
+                    if (selectedVideoId) {
+                      src = `https://www.youtube.com/live/yNB1h2ubyYM?si=_tPwUI9yxZCDFGMO`;
+                    } else if (externalSource && externalSource.startsWith("channel:")) {
+                      const handle = externalSource.replace("channel:", "");
+                      // attempt to use live_stream embed by handle (may work for some channels)
+                      src = `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(handle)}`;
+                    } else if (!externalSource) {
+                      const chosen = streamQualities.find(s => s.quality === selectedQuality) || streamQualities[1];
+                      src = `https://www.youtube.com/embed/${chosen.videoId}?autoplay=1&mute=1`;
+                    }
+
+                    const embedNoCookie = src ? src.replace("youtube.com/embed", "youtube-nocookie.com/embed") : null;
+                    const watchUrl = selectedVideoId ? `https://www.youtube.com/watch?v=${selectedVideoId}` : externalSource;
+
+                    // Auto-open the watch URL if embedding fails and we haven't handled it yet
+                    useEffect(() => {
+                      if (iframeError && !iframeErrorHandled && watchUrl) {
+                        try {
+                          window.open(watchUrl, "_blank");
+                        } catch (e) {
+                          console.warn("Failed to auto-open watch URL", e);
+                        }
+                        setIframeErrorHandled(true);
+                      }
+                    }, [iframeError, iframeErrorHandled, watchUrl]);
+
                     return (
                       <>
-                        <iframe
-                          key={iframeKey}
-                          className="w-full h-full"
-                          src={src}
-                          title="Sunday Service - Live"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; autoplay"
-                          allowFullScreen
-                          onLoad={() => setIframeError(false)}
-                          onError={() => setIframeError(true)}
-                        />
+                        {src ? (
+                          <iframe
+                            key={iframeKey}
+                            className="w-full h-full"
+                            src={src}
+                            title="Sunday Service - Live"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; autoplay"
+                            allowFullScreen
+                            onLoad={() => { console.debug("iframe loaded", src); setIframeError(false); }}
+                            onError={() => { console.debug("iframe error", src); setIframeError(true); }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="text-white mb-2">This stream cannot be embedded.</div>
+                              {externalSource ? (
+                                <div className="flex space-x-2 justify-center">
+                                  <Button size="sm" onClick={() => window.open(externalSource, "_blank")}>Open External</Button>
+                                </div>
+                              ) : (
+                                <div className="text-sm text-muted-foreground">No embeddable stream available.</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
 
                         {iframeError && (
                           <div className="absolute inset-0 bg-black/70 z-20 flex flex-col items-center justify-center text-center p-4">
                             <div className="text-white font-semibold mb-2">Unable to play the stream.</div>
-                            <div className="text-sm text-muted-foreground mb-4">An error occurred. Please try again later.</div>
-                            <div className="flex space-x-2">
+                            <div className="text-sm text-muted-foreground mb-4">Embedding was blocked — YouTube may have disabled embedding for this stream.</div>
+                            <div className="flex flex-col sm:flex-row items-center gap-2">
                               <Button size="sm" onClick={() => { setIframeKey(k => k + 1); setIframeError(false); }}>Retry</Button>
+                              {embedNoCookie && (
+                                <Button size="sm" variant="outline" onClick={() => window.open(embedNoCookie, "_blank")}>Open Embed (nocookie)</Button>
+                              )}
+                              {watchUrl && (
+                                <Button size="sm" variant="ghost" onClick={() => window.open(watchUrl, "_blank")}>Open on YouTube</Button>
+                              )}
                             </div>
+                            <div className="text-xs text-muted-foreground mt-3 break-words">Embed URL: {src}</div>
                           </div>
                         )}
                       </>

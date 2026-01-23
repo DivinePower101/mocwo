@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, MessageCircle, Phone, MapPin, Send, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { sendPrayerRequest } from "@/lib/api";
 
 type Message = { sender: "ai" | "user"; content: React.ReactNode };
 
@@ -52,37 +53,21 @@ export default function PrayerAI() {
 
   const sendLeaderNotification = async () => {
     try {
-      const response = await fetch("/api/sendPrayer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ method, name, phone, location, prayer }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Prayer request failed:", errorData);
-        addAIMessage(
-          <>
-            ⚠️ <strong>Message could not be sent.</strong> <br/>
-            {errorData.details || "Please try again or contact support."}
-          </>
-        );
-      } else {
-        const data = await response.json();
-        console.log("Prayer request sent:", data);
-        addAIMessage(
-          <>
-            ✅ <strong>Message sent successfully!</strong> <br/>
-            Our prayer leaders will respond to you soon.
-          </>
-        );
-      }
+      const data = await sendPrayerRequest({ method, name, phone, location, prayer });
+      console.log("Prayer request sent:", data);
+      addAIMessage(
+        <>
+          ✅ <strong>Message sent successfully!</strong> <br/>
+          Our prayer leaders will respond to you soon.
+        </>
+      );
     } catch (error) {
       console.error("Error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Please check your internet and try again.";
       addAIMessage(
         <>
           ⚠️ <strong>Connection error.</strong> <br/>
-          Please check your internet and try again.
+          {errorMessage}
         </>
       );
     }

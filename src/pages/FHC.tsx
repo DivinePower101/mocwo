@@ -65,7 +65,7 @@ export default function Fhc() {
       </header>
 
       <div className="bg-white/60 py-8">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row gap-4 items-center justify-center">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 sm:flex sm:flex-row gap-4 items-center justify-center">
           <a href="/give/offering" className="px-5 py-3 rounded-full bg-slate-900 text-white font-semibold shadow hover:scale-[1.01] transition">Offering</a>
           <a href="/give/seed" className="px-5 py-3 rounded-full bg-amber-400 text-slate-900 font-semibold shadow hover:scale-[1.01] transition">Seed</a>
           <a href="/give/tithe" className="px-5 py-3 rounded-full bg-teal-500 text-white font-semibold shadow hover:scale-[1.01] transition">Tithe</a>

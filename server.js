@@ -1,45 +1,21 @@
 // server.js
+import dotenv from "dotenv";
 import express from "express";
 import bodyParser from "body-parser";
-import twilio from "twilio";
-import dotenv from "dotenv";
+import cors from "cors";
+import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
 
-// dotenv.config();
-// const app = express();
-// app.use(bodyParser.json());
-
-// const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
-
-// app.post("/api/send-prayer-sms", async (req, res) => {
-//   const { name, phone, location, prayer } = req.body;
-
-//   try {
-//     await client.messages.create({
-//       body: `New Prayer Request from ${name} (${phone}, ${location}):\n${prayer}`,
-//       from: process.env.TWILIO_PHONE, // Your Twilio number
-//       to: process.env.LEADER_PHONE,   // Leader's phone number
-//     });
-
-//     res.status(200).json({ message: "SMS sent successfully" });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Failed to send SMS" });
-//   }
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-
-require("dotenv").config();
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const axios = require("axios");
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+// Supabase initialization
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://foojbihdxdoflfjnhfjf.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Termii API endpoint and headers
 const TERMII_API_KEY = process.env.TERMII_API_KEY;
@@ -50,6 +26,8 @@ const LEADER_PHONE = process.env.LEADER_PHONE_NUMBER;
 // Send prayer request via SMS or WhatsApp using Termii
 app.post("/api/sendPrayer", async (req, res) => {
   const { name, phone, location, prayer, method } = req.body;
+
+  console.log("[PRAYER REQUEST] Received:", { name, phone, location, method });
 
   if (!name || !phone || !prayer) {
     return res.status(400).json({ error: "Missing required fields." });
@@ -73,29 +51,50 @@ Prayer: ${prayer}
 `;
 
   try {
-    let response;
-    
-    if (method === "whatsapp") {
-      // Send via WhatsApp using Termii
-      response = await axios.post(`${TERMII_API_URL}/sms/send`, {
-        to: LEADER_PHONE,
-        from: TERMII_SENDER_ID,
-        sms: messageBody,
-        type: "whatsapp",
-        api_key: TERMII_API_KEY,
-      });
-    } else {
-      // Send via SMS (default) using Termii
-      response = await axios.post(`${TERMII_API_URL}/sms/send`, {
-        to: LEADER_PHONE,
-        from: TERMII_SENDER_ID,
-        sms: messageBody,
-        type: "plain",
-        api_key: TERMII_API_KEY,
+    // Save prayer to Supabase
+    console.log("[DB] Saving prayer to Supabase...");
+    const { error: dbError } = await supabase
+      .from("prayer_requests")
+      .insert([
+        {
+          name,
+          phone: formattedPhone,
+          location: location || null,
+          prayer_text: prayer,
+          method,
+          status: "received"
+        }
+      ]);
+
+    if (dbError) {
+      console.error("[DB ERROR]:", dbError);
+      return res.status(500).json({ error: "Failed to save prayer", details: dbError.message });
+    }
+    console.log("[DB] ✅ Prayer saved to Supabase");
+
+    // Check if required env vars are set
+    if (!TERMII_API_KEY || !LEADER_PHONE) {
+      console.warn("[WARNING] TERMII_API_KEY or LEADER_PHONE not configured");
+      return res.status(200).json({
+        message: "Prayer saved successfully (SMS/WhatsApp sending not configured)",
+        success: true,
+        recipientPhone: LEADER_PHONE || "Not configured",
       });
     }
 
-    console.log(`[${method.toUpperCase()}] Response from Termii:`, response.data);
+    let response;
+    const termiiPayload = {
+      to: LEADER_PHONE,
+      from: TERMII_SENDER_ID,
+      sms: messageBody,
+      type: method === "whatsapp" ? "whatsapp" : "plain",
+      api_key: TERMII_API_KEY,
+    };
+    
+    console.log("[TERMII] Sending via " + (method === "whatsapp" ? "WhatsApp" : "SMS"), { to: LEADER_PHONE });
+    response = await axios.post(`${TERMII_API_URL}/sms/send`, termiiPayload);
+
+    console.log(`[TERMII] ✅ Response:`, response.data);
 
     res.status(200).json({
       message: `Prayer request sent via ${method === "whatsapp" ? "WhatsApp" : "SMS"} successfully.`,
@@ -103,7 +102,7 @@ Prayer: ${prayer}
       recipientPhone: LEADER_PHONE,
     });
   } catch (error) {
-    console.error(`[ERROR] Failed to send ${method} via Termii:`, {
+    console.error(`[ERROR] Failed:`, {
       status: error.response?.status,
       data: error.response?.data,
       message: error.message,
@@ -143,11 +142,6 @@ Prayer: ${prayer}
     console.error("Twilio Error:", err);
     return res.status(500).json({ error: "Failed to send SMS." });
   }
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Prayer SMS server running on port ${PORT}`);
 });
 
 // Secure admin creation endpoint
@@ -230,4 +224,9 @@ app.post('/api/create-admin', async (req, res) => {
     console.error('Error creating admin:', err?.response?.data || err.message || err);
     return res.status(500).json({ error: 'Failed to create admin', details: err?.response?.data || err.message });
   }
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Prayer SMS server running on port ${PORT}`);
 });

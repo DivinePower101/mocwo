@@ -12,7 +12,7 @@ const Services = () => {
       image: "🎵",
       details: "Join us for an uplifting time of worship, fellowship, and life-changing messages",
       color: "from-blue-500 to-blue-600",
-      liveLink: "https://www.youtube.com/@revprincebediakoappau"
+      liveLink: "https://www.youtube.com/live/yNB1h2ubyYM?si=_tPwUI9yxZCDFGMO"
     },
     {
       title: "Monday TikTok Live",
@@ -101,8 +101,8 @@ const Services = () => {
               Life-transforming worship experiences designed to encounter God and grow in faith
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/live">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to={`/live?source=${encodeURIComponent('https://www.youtube.com/live/yNB1h2ubyYM?si=_tPwUI9yxZCDFGMO')}`}>
                 <Button
                   size="lg"
                   className="bg-secondary hover:bg-secondary/90 text-secondary-foreground px-8 py-6 text-lg font-bold rounded-full shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105"
@@ -163,13 +163,14 @@ const Services = () => {
                   <p className="text-sm text-muted-foreground mb-6">{service.details}</p>
 
                   <div className="space-y-3">
-                    <Button 
-                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold rounded-full transition-all hover:shadow-lg"
-                      onClick={() => window.open(service.liveLink, '_blank')}
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      Watch Live
-                    </Button>
+                    <Link to={`/live?source=${encodeURIComponent(service.liveLink)}`}>
+                      <Button 
+                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold rounded-full transition-all hover:shadow-lg"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Watch Live
+                      </Button>
+                    </Link>
 
                     <Button 
                       variant="outline" 

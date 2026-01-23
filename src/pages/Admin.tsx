@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Lock, Users, CreditCard, TrendingUp, DollarSign, Calendar } from "lucide-react";
+import { Lock, Users, CreditCard, TrendingUp, DollarSign, Calendar, Heart } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Trash2, Edit2, Plus } from "lucide-react";
 
@@ -15,15 +15,22 @@ const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [partnerships, setPartnerships] = useState([]);
+  const [membershipRequests, setMembershipRequests] = useState([]);
+  const [prayerRequests, setPrayerRequests] = useState<any[]>([]);
   const [newsItems, setNewsItems] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [newsForm, setNewsForm] = useState({ title: "", excerpt: "", content: "", date: "", image: "", link: "" });
   const [imageUploading, setImageUploading] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any | null>(null);
+  const [selectedPrayer, setSelectedPrayer] = useState<any | null>(null);
   const [stats, setStats] = useState({
     totalPartnerships: 0,
     totalAmount: 0,
     pendingApplications: 0,
-    activePartners: 0
+    activePartners: 0,
+    totalMembers: 0,
+    pendingMembers: 0,
+    approvedMembers: 0
   });
   const { toast } = useToast();
 
@@ -34,6 +41,8 @@ const Admin = () => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchPartnerships();
+      fetchMembershipRequests();
+      fetchPrayerRequests();
       fetchStats();
       fetchNews();
     }
@@ -50,6 +59,66 @@ const Admin = () => {
       setNewsItems(data || []);
     } catch (error: any) {
       toast({ title: "Error fetching news", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const fetchMembershipRequests = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('membership_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMembershipRequests(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching membership requests",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchPrayerRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('prayer_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPrayerRequests(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching prayer requests",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updatePrayerStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('prayer_requests')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status updated",
+        description: `Prayer request marked as ${status}`,
+      });
+
+      fetchPrayerRequests();
+    } catch (error: any) {
+      toast({
+        title: "Error updating status",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -213,22 +282,35 @@ const Admin = () => {
 
   const fetchStats = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: partnershipData, error: partnershipError } = await supabase
         .from('partnerships')
         .select('*');
 
-      if (error) throw error;
+      if (partnershipError) throw partnershipError;
 
-      const total = data?.length || 0;
-      const totalAmount = data?.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0') || 0), 0) || 0;
-      const pending = data?.filter(p => p.status === 'pending').length || 0;
-      const active = data?.filter(p => p.status === 'approved').length || 0;
+      const partnershipTotal = partnershipData?.length || 0;
+      const partnershipTotalAmount = partnershipData?.reduce((sum, p) => sum + (parseFloat(p.amount?.toString() || '0') || 0), 0) || 0;
+      const partnershipPending = partnershipData?.filter(p => p.status === 'pending').length || 0;
+      const partnershipActive = partnershipData?.filter(p => p.status === 'approved').length || 0;
+
+      const { data: membershipData, error: membershipError } = await supabase
+        .from('membership_requests')
+        .select('*');
+
+      if (membershipError) throw membershipError;
+
+      const membershipTotal = membershipData?.length || 0;
+      const membershipPending = membershipData?.filter(m => m.status === 'pending').length || 0;
+      const membershipApproved = membershipData?.filter(m => m.status === 'approved').length || 0;
 
       setStats({
-        totalPartnerships: total,
-        totalAmount,
-        pendingApplications: pending,
-        activePartners: active
+        totalPartnerships: partnershipTotal,
+        totalAmount: partnershipTotalAmount,
+        pendingApplications: partnershipPending,
+        activePartners: partnershipActive,
+        totalMembers: membershipTotal,
+        pendingMembers: membershipPending,
+        approvedMembers: membershipApproved
       });
     } catch (error: any) {
       console.error('Error fetching stats:', error);
@@ -250,6 +332,31 @@ const Admin = () => {
       });
 
       fetchPartnerships();
+      fetchStats();
+    } catch (error: any) {
+      toast({
+        title: "Error updating status",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateMembershipStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('membership_requests')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status updated",
+        description: `Membership ${status} successfully`,
+      });
+
+      fetchMembershipRequests();
       fetchStats();
     } catch (error: any) {
       toast({
@@ -360,8 +467,32 @@ const Admin = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Active Partners</p>
-                  <p className="text-3xl font-bold text-primary">{stats.activePartners}</p>
+                  <p className="text-sm text-muted-foreground">Total Members</p>
+                  <p className="text-3xl font-bold text-primary">{stats.totalMembers}</p>
+                </div>
+                <Users className="w-12 h-12 text-primary opacity-60" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-card">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pending Members</p>
+                  <p className="text-3xl font-bold text-primary">{stats.pendingMembers}</p>
+                </div>
+                <Calendar className="w-12 h-12 text-primary opacity-60" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-card">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Approved Members</p>
+                  <p className="text-3xl font-bold text-primary">{stats.approvedMembers}</p>
                 </div>
                 <TrendingUp className="w-12 h-12 text-primary opacity-60" />
               </div>
@@ -441,7 +572,327 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        {/* News Management */}
+        {/* Membership Requests Table */}
+        <Card className="border-0 shadow-divine mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center text-xl">
+              <Users className="w-6 h-6 mr-2" />
+              Membership Requests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedMember ? (
+              <div className="space-y-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSelectedMember(null)}
+                  className="mb-4"
+                >
+                  ← Back to List
+                </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted p-6 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">First Name</p>
+                    <p className="text-lg font-semibold">{selectedMember.first_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Last Name</p>
+                    <p className="text-lg font-semibold">{selectedMember.last_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="text-lg font-semibold">{selectedMember.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p className="text-lg font-semibold">{selectedMember.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Date of Birth</p>
+                    <p className="text-lg font-semibold">{selectedMember.date_of_birth || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Gender</p>
+                    <p className="text-lg font-semibold">{selectedMember.gender || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Marital Status</p>
+                    <p className="text-lg font-semibold">{selectedMember.marital_status || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Membership Type</p>
+                    <p className="text-lg font-semibold">{selectedMember.membership_type || 'N/A'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-sm text-muted-foreground">Address</p>
+                    <p className="text-lg font-semibold">{selectedMember.address || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">City</p>
+                    <p className="text-lg font-semibold">{selectedMember.city || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">State</p>
+                    <p className="text-lg font-semibold">{selectedMember.state || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Country</p>
+                    <p className="text-lg font-semibold">{selectedMember.country || 'N/A'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-sm text-muted-foreground">Message</p>
+                    <p className="text-lg font-semibold">{selectedMember.message || 'No message'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge 
+                      variant={selectedMember.status === 'approved' ? 'default' : 
+                              selectedMember.status === 'rejected' ? 'destructive' : 'secondary'}
+                      className="text-base"
+                    >
+                      {selectedMember.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Submitted</p>
+                    <p className="text-lg font-semibold">{new Date(selectedMember.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                {selectedMember.status === 'pending' && (
+                  <div className="flex gap-3 mt-6">
+                    <Button 
+                      onClick={() => updateMembershipStatus(selectedMember.id, 'approved')}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      Approve
+                    </Button>
+                    <Button 
+                      variant="destructive"
+                      onClick={() => updateMembershipStatus(selectedMember.id, 'rejected')}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Membership Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {membershipRequests.map((member: any) => (
+                      <TableRow key={member.id}>
+                        <TableCell className="font-medium">{member.first_name} {member.last_name}</TableCell>
+                        <TableCell>{member.email}</TableCell>
+                        <TableCell>{member.phone}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{member.membership_type || 'N/A'}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={member.status === 'approved' ? 'default' : 
+                                    member.status === 'rejected' ? 'destructive' : 'secondary'}
+                          >
+                            {member.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(member.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setSelectedMember(member)}
+                          >
+                            View Details
+                          </Button>
+                          {member.status === 'pending' && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                onClick={() => updateMembershipStatus(member.id, 'approved')}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => updateMembershipStatus(member.id, 'rejected')}
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {membershipRequests.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No membership requests yet
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Prayer Requests */}
+        <Card className="border-0 shadow-divine mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center text-xl">
+              <Heart className="w-6 h-6 mr-2" />
+              Prayer Requests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedPrayer ? (
+              <div>
+                <Button variant="outline" onClick={() => setSelectedPrayer(null)} className="mb-6">
+                  ← Back to List
+                </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="text-lg font-semibold">{selectedPrayer.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p className="text-lg font-semibold">{selectedPrayer.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p className="text-lg font-semibold">{selectedPrayer.location || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Method</p>
+                    <Badge variant="outline" className="text-base">
+                      {selectedPrayer.method?.toUpperCase() || 'SMS'}
+                    </Badge>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-sm text-muted-foreground">Prayer Request</p>
+                    <p className="text-base font-semibold whitespace-pre-wrap">{selectedPrayer.prayer_text}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge 
+                      variant={selectedPrayer.status === 'processed' ? 'default' : 
+                              selectedPrayer.status === 'failed' ? 'destructive' : 'secondary'}
+                      className="text-base"
+                    >
+                      {selectedPrayer.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Submitted</p>
+                    <p className="text-lg font-semibold">{new Date(selectedPrayer.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+                {selectedPrayer.status === 'received' && (
+                  <div className="flex gap-3 mt-6">
+                    <Button 
+                      onClick={() => updatePrayerStatus(selectedPrayer.id, 'processed')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Mark as Processed
+                    </Button>
+                    <Button 
+                      variant="destructive"
+                      onClick={() => updatePrayerStatus(selectedPrayer.id, 'failed')}
+                    >
+                      Mark as Failed
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {prayerRequests.map((prayer: any) => (
+                      <TableRow key={prayer.id}>
+                        <TableCell className="font-medium">{prayer.name}</TableCell>
+                        <TableCell>{prayer.phone}</TableCell>
+                        <TableCell>{prayer.location || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{prayer.method?.toUpperCase() || 'SMS'}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={prayer.status === 'processed' ? 'default' : 
+                                    prayer.status === 'failed' ? 'destructive' : 'secondary'}
+                          >
+                            {prayer.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(prayer.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setSelectedPrayer(prayer)}
+                          >
+                            View Details
+                          </Button>
+                          {prayer.status === 'received' && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                onClick={() => updatePrayerStatus(prayer.id, 'processed')}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                              >
+                                Processed
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => updatePrayerStatus(prayer.id, 'failed')}
+                              >
+                                Failed
+                              </Button>
+                            </>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {prayerRequests.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No prayer requests yet
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
         <Card className="border-0 shadow-divine mt-8">
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
