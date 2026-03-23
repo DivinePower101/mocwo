@@ -1,8 +1,14 @@
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import CC from "@/assets/cc.jpeg";
-import { Book, Play, Download, Headphones, Mail, Phone, MapPin, Facebook, Instagram, Youtube, Zap, Target, Users, Globe } from "lucide-react";
+import S1 from "@/assets/sunday/1.jpeg";
+import S2 from "@/assets/sunday/2.jpeg";
+import S3 from "@/assets/sunday/3.jpeg";
+import S4 from "@/assets/sunday/4.jpeg";
+import S5 from "@/assets/sunday/5.jpeg";
+import { Book, Play, Pause, ChevronLeft, ChevronRight, Download, Headphones, Mail, Phone, MapPin, Facebook, Instagram, Youtube, Zap, Target, Users, Globe } from "lucide-react";
 
 const objectives = [
   {
@@ -58,7 +64,75 @@ const achievements = [
   },
 ];
 
+// CountUp component: animates from 0 to target number when scrolled into view
+function CountUp({ target, duration = 1400 }: { target: string; duration?: number }) {
+  const elRef = useRef<HTMLDivElement | null>(null);
+  const [display, setDisplay] = useState<string>(target);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    const str = String(target);
+    // Extract numeric part and suffix (e.g., "15,000+" -> 15000 and "+")
+    const numericMatch = str.replace(/,/g, '').match(/(\d+)/);
+    const suffixMatch = str.match(/[^0-9,]+$/);
+    const endValue = numericMatch ? parseInt(numericMatch[0], 10) : 0;
+    const suffix = suffixMatch ? suffixMatch[0] : '';
+
+    if (!elRef.current) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !startedRef.current) {
+          startedRef.current = true;
+          const start = performance.now();
+
+          const step = (now: number) => {
+            const progress = Math.min((now - start) / duration, 1);
+            const current = Math.floor(progress * endValue);
+            // Format with commas
+            const formatted = current.toLocaleString();
+            setDisplay(`${formatted}${progress === 1 ? suffix : suffix}`);
+            if (progress < 1) {
+              requestAnimationFrame(step);
+            } else {
+              // ensure final value matches exactly
+              setDisplay(endValue.toLocaleString() + suffix);
+            }
+          };
+
+          requestAnimationFrame(step);
+        }
+      });
+    }, { threshold: 0.25 });
+
+    observer.observe(elRef.current);
+
+    return () => observer.disconnect();
+  }, [target, duration]);
+
+  return (
+    <div ref={elRef} aria-live="polite" className="text-5xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 text-transparent bg-clip-text mb-3">
+      {display}
+    </div>
+  );
+}
+
 const MOCWO = () => {
+  const slides = [S1, S2, S3, S4, S5];
+  const [index, setIndex] = useState(0);
+  const [playing, setPlaying] = useState(true);
+
+  // Autoplay
+  useEffect(() => {
+    if (!playing) return;
+    const t = setInterval(() => setIndex((i) => (i + 1) % slides.length), 4500);
+    return () => clearInterval(t);
+  }, [playing, slides.length]);
+
+  const prev = () => setIndex((i) => (i - 1 + slides.length) % slides.length);
+  const next = () => setIndex((i) => (i + 1) % slides.length);
+  const goTo = (i: number) => setIndex(i);
+
   return (
     <div className="min-h-screen w-full">
       {/* 🎥 Video Background Hero */}
@@ -119,6 +193,16 @@ const MOCWO = () => {
             >
               🎓 Explore Our Outreaches
             </Button>
+
+            <Link to="/partnership">
+              <Button
+                size="lg"
+                className="bg-white/10 backdrop-blur-md border-2 border-white text-white hover:bg-white/20 px-8 py-6 text-lg font-bold rounded-full transition-all duration-300 hover:scale-105"
+              >
+                🤝 Partner With Us
+              </Button>
+            </Link>
+
             <Link to="/give/mocwo">
               <Button
                 size="lg"
@@ -168,8 +252,54 @@ const MOCWO = () => {
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-2xl blur-3xl"></div>
               <div className="relative bg-gradient-to-br from-blue-600/10 to-cyan-600/10 backdrop-blur-sm p-8 rounded-2xl border border-blue-500/20">
-                <div className="aspect-square rounded-xl overflow-hidden">
-                  <img src={CC} alt="MOCWO" className="w-full h-full object-cover" />
+                <div className="relative">
+                  <button
+                    onClick={() => setPlaying((p) => !p)}
+                    aria-pressed={!playing}
+                    className="absolute top-3 right-3 z-20 bg-white/10 text-white rounded-full p-2 hover:bg-white/20 transition"
+                    title={playing ? "Pause autoplay" : "Start autoplay"}
+                  >
+                    {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  </button>
+
+                  <button
+                    onClick={prev}
+                    aria-label="Previous"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/10 text-white backdrop-blur-sm"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={next}
+                    aria-label="Next"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/10 text-white backdrop-blur-sm"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  <div className="relative aspect-square rounded-xl overflow-hidden">
+                    {slides.map((src, i) => (
+                      <div
+                        key={i}
+                        className={`absolute inset-0 transition-opacity duration-700 ${i === index ? "opacity-100 z-10" : "opacity-0 pointer-events-none z-0"}`}
+                      >
+                        <img src={src} alt={`MOCWO ${i + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+
+                    {/* Pagination dots */}
+                    <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
+                      {slides.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => goTo(i)}
+                          aria-label={`Go to slide ${i + 1}`}
+                          className={`w-2 h-2 rounded-full transition-all ${index === i ? "bg-white" : "bg-white/40 hover:bg-white/60"}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -231,9 +361,7 @@ const MOCWO = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 to-cyan-600/0 group-hover:from-blue-600/10 group-hover:to-cyan-600/10 transition-all"></div>
                 <CardContent className="p-8 text-center relative z-10">
                   <div className="text-6xl mb-4 group-hover:scale-125 transition-transform">{ach.icon}</div>
-                  <h3 className="text-5xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 text-transparent bg-clip-text mb-3">
-                    {ach.number}
-                  </h3>
+                  <CountUp target={ach.number} />
                   <h4 className="text-xl font-bold mb-2">{ach.title}</h4>
                   <p className="text-muted-foreground text-sm">
                     {ach.description}

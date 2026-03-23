@@ -43,18 +43,5 @@ export const partnershipLevels = [
       "Ministry impact reports",
     ],
   },
-  {
-    slug: "kingdom-partner",
-    title: "Kingdom Partner",
-    amount: "$500+/month",
-    icon: Crown,
-    color: "from-purple-500 to-pink-500",
-    benefits: [
-      "All Gold benefits",
-      "Personal ministry consultation",
-      "VIP event access",
-      "Direct pastor communication",
-      "Legacy project involvement",
-    ],
-  },
+
 ];

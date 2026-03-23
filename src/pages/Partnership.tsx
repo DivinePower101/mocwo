@@ -5,10 +5,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Footer from "@/components/Footer";
 import { Crown, Star, Sparkles, Heart, TrendingUp, Shield, Award, Handshake, CheckCircle, Users, Globe, BookOpen, Mail, Phone, MapPin, Facebook, Instagram, Youtube, Zap, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import hero1 from "@/assets/hero1.jpeg";
 import { Link } from "react-router-dom";
+import HeroCarousel from "@/components/ui/hero-carousel";
+
+import hero1 from "../assets/hero1.jpeg";
+import tImage from "../assets/t.jpg";
+import vImage from "../assets/v.jpg";
+
+// Load all m(...) images from assets with Vite glob (relative path works in this module)
+const mImageModules = import.meta.glob("../assets/m*.{jpg,jpeg}", { eager: true, query: '?url', import: 'default' });
+
+// Explicitly include m(1) through m(30); use both .jpg and .jpeg extension options.
+const mImages = Array.from({ length: 30 }, (_, i) => {
+  const basename = `m (${i + 1})`;
+  const jpegKey = `../assets/${basename}.jpeg`;
+  const jpgKey = `../assets/${basename}.jpg`;
+  return (mImageModules[jpegKey] as string | undefined) || (mImageModules[jpgKey] as string | undefined) || null;
+})
+  .filter((img): img is string => !!img);
+
+console.log("Partnership mImages loaded:", mImages.length, mImages);
 
 const Partnership = () => {
   const [formData, setFormData] = useState({
@@ -20,6 +39,33 @@ const Partnership = () => {
     paymentMethod: "",
     message: ""
   });
+
+  const ctaTexts = ["Join Our Family", "Partner With Us", "Explore Levels"];
+  const ctaLinks = ["/membership", "/partnership", "#partnership-levels"];
+
+  const allCarouselImages = [tImage, vImage, ...mImages];
+
+  const carouselSlides = allCarouselImages.length > 0
+    ? allCarouselImages.map((img, idx) => ({
+        id: idx + 1,
+        title: `Partnership Highlight ${idx + 1}`,
+        subtitle: "Our mission is to impact nations together",
+        description: "Partner with us to empower outreach, transform communities, and share the gospel across the world.",
+        image: img,
+        ctaText: ctaTexts[idx % ctaTexts.length],
+        ctaLink: ctaLinks[idx % ctaLinks.length]
+      }))
+    : [
+        {
+          id: 1,
+          title: "Kingdom Partnership in Action",
+          subtitle: "Join hands with Fathers Heart Chapel Int'l",
+          description: "Partner with us to empower outreach, support vulnerable communities, and spread the Gospel worldwide.",
+          image: hero1,
+          ctaText: "Join Our Family",
+          ctaLink: "/membership"
+        }
+      ];
 
   const partnershipLevels = [
     {
@@ -63,20 +109,7 @@ const Partnership = () => {
         "Ministry impact reports"
       ]
     },
-    {
-      title: "Kingdom Partner",
-      amount: "$500+/month",
-      icon: Crown,
-      color: "from-purple-500 to-pink-500",
-      description: "Legacy & maximum impact",
-      benefits: [
-        "All Gold benefits",
-        "Personal ministry consultation",
-        "VIP event access",
-        "Direct pastor communication",
-        "Legacy project involvement"
-      ]
-    }
+
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -95,7 +128,8 @@ const Partnership = () => {
           level: formData.level,
           amount: parseFloat(formData.amount) || 0,
           payment_method: formData.paymentMethod,
-          message: formData.message
+          message: formData.message,
+          status: 'approved'
         }]);
 
       if (error) throw error;
@@ -118,130 +152,32 @@ const Partnership = () => {
   return (
     <div className="min-h-screen pt-16 bg-gradient-to-b from-white via-blue-50 to-white">
       
-      {/* Enhanced Hero Section */}
-      <section
-        className="py-32 relative overflow-hidden"
-        style={{
-          backgroundImage: `url(${hero1})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        {/* Animated Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/85 via-blue-800/75 to-cyan-600/65 backdrop-blur-sm" />
-        
-        {/* Animated Background Elements */}
-        <div className="absolute top-10 right-10 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+      {/* Hero Carousel */}
+      <HeroCarousel slides={carouselSlides} showContent={false} />
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center text-white">
-            <div className="inline-block px-6 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/30 mb-6">
-              <p className="text-sm font-semibold">Kingdom Partnership</p>
-            </div>
-            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-              Partner in <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-200">God's Kingdom</span>
-            </h1>
-            <p className="text-xl md:text-2xl opacity-95 max-w-2xl mx-auto">
-              Be part of something bigger than yourself and impact millions around the world
-            </p>
+      {/* Dancing text animation */}
+      <div className="relative overflow-hidden h-14 bg-gradient-to-r from-cyan-50 via-blue-50 to-cyan-50 mt-4 mb-8">
+        <div className="absolute inset-0 flex items-center">
+          <div className="inline-flex whitespace-nowrap text-lg sm:text-3xl font-extrabold text-blue-700 tracking-widest animate-marquee">
+            <span className="mx-8">Partner with us to empower communities</span>
+            <span className="mx-8">Partner with us and multiply your impact</span>
+            <span className="mx-8">Partner with us to feed, shelter & educate</span>
+            <span className="mx-8">Partner with us for sustainable outreach</span>
+            <span className="mx-8">Partner with us and transform lives globally</span>
+            <span className="mx-8">Partner with us and join our kingdom mission</span>
+            <span className="mx-8">Partner with us to empower communities</span>
+            <span className="mx-8">Partner with us and multiply your impact</span>
+            <span className="mx-8">Partner with us to feed, shelter & educate</span>
+            <span className="mx-8">Partner with us for sustainable outreach</span>
+            <span className="mx-8">Partner with us and transform lives globally</span>
+            <span className="mx-8">Partner with us and join our kingdom mission</span>
           </div>
         </div>
-      </section>
-
-      {/* Why Partnership Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1">
-              <div className="inline-block px-4 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-full border border-blue-300 mb-6">
-                <p className="text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-cyan-600">Partnership Mission</p>
-              </div>
-              <h2 className="text-5xl font-bold mb-4 leading-tight">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-cyan-700">
-                  Building God's Kingdom Together
-                </span>
-              </h2>
-              <p className="text-lg text-gray-700 mb-6 leading-relaxed font-medium">
-                Partnership with Fathers Heart Chapel International is about being part of something BIGGER than yourself and reaching far beyond your personal sphere of influence.
-              </p>
-              <p className="text-lg text-gray-700 mb-8 leading-relaxed">
-                Through your partnership, we're able to reach millions through satellite broadcasting, support missionary work, feed the hungry, care for orphans, and build churches that transform communities across the globe.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <a href="#partnership-levels" className="scroll-smooth">
-                  <Button
-                    size="lg"
-                    className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 text-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 font-bold w-full sm:w-auto"
-                  >
-                    Explore Levels
-                  </Button>
-                </a>
-                <a href="#application" className="scroll-smooth">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold w-full sm:w-auto"
-                  >
-                    Apply Now
-                  </Button>
-                </a>
-              </div>
-            </div>
-
-            <div className="order-1 lg:order-2 relative">
-              <div className="absolute -inset-6 bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 rounded-2xl opacity-20 blur-xl animate-pulse" />
-              <Card className="border-0 shadow-2xl overflow-hidden relative">
-                <CardContent className="p-0">
-                  <div className="aspect-[4/3] relative flex items-center justify-center overflow-hidden rounded-xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 to-cyan-600/40 z-10" />
-                    <img
-                      src={hero1}
-                      alt="Partnership Ministry"
-                      className="object-cover w-full h-full hover:scale-105 transition-transform duration-500 max-w-full"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Partnership Impact Stats */}
-      <section className="py-20 bg-gradient-to-r from-blue-950 via-blue-900 to-cyan-800 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-10 right-20 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-10 left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-lg">
-              <CardContent className="p-8 text-center">
-                <div className="text-5xl mb-4">🌍</div>
-                <h3 className="text-3xl font-bold text-white mb-2">50+</h3>
-                <p className="text-blue-100 font-semibold">Countries Reached</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-lg">
-              <CardContent className="p-8 text-center">
-                <div className="text-5xl mb-4">💰</div>
-                <h3 className="text-3xl font-bold text-white mb-2">$Millions</h3>
-                <p className="text-blue-100 font-semibold">Invested in Ministry</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-lg">
-              <CardContent className="p-8 text-center">
-                <div className="text-5xl mb-4">🤝</div>
-                <h3 className="text-3xl font-bold text-white mb-2">10K+</h3>
-                <p className="text-blue-100 font-semibold">Active Partners</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
+      </div>
+      <style>{`@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+            .animate-marquee { animation: marquee 20s linear infinite; display: inline-flex; }
+            .animate-marquee:hover { animation-play-state: paused; }
+      `}</style>
 
       {/* Partnership Levels */}
       <section id="partnership-levels" className="py-24 bg-white relative overflow-hidden">
@@ -263,13 +199,13 @@ const Partnership = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
             {partnershipLevels.map((level, index) => {
               const Icon = level.icon;
               return (
                 <Card
                   key={index}
-                  className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-4 group overflow-hidden relative"
+                  className="mx-auto w-full max-w-sm border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-4 group overflow-hidden relative"
                 >
                   <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${level.color}`} />
                   <div className={`absolute inset-0 bg-gradient-to-br ${level.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
@@ -292,9 +228,6 @@ const Partnership = () => {
                         </li>
                       ))}
                     </ul>
-                    <Button className={`w-full bg-gradient-to-r ${level.color} text-white hover:shadow-lg transition-all duration-300 font-bold`}>
-                      Choose Level
-                    </Button>
                   </CardContent>
                 </Card>
               );
@@ -303,49 +236,47 @@ const Partnership = () => {
         </div>
       </section>
 
-      {/* Partnership Benefits */}
-      <section className="py-24 bg-gradient-to-b from-blue-50 to-white relative overflow-hidden">
+
+      {/* Payment Methods Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-950 via-blue-900 to-cyan-800 relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-10 right-20 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-10 left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-cyan-700">
-              Partnership Benefits
-            </h2>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto font-medium">
-              Exclusive benefits and recognition for your commitment
-            </p>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-white mb-4">Secure Payment Options</h2>
+            <p className="text-blue-100 text-lg">Multiple ways to support the ministry</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: Award, title: "Recognition", desc: "Acknowledged in annual partner appreciation events", color: "from-yellow-500 to-orange-500" },
-              { icon: BookOpen, title: "Exclusive Access", desc: "Early access to new teachings, books, and resources", color: "from-blue-500 to-cyan-500" },
-              { icon: Shield, title: "Prayer Coverage", desc: "Personalized prayer support from intercession team", color: "from-green-500 to-emerald-500" },
-              { icon: Users, title: "Community", desc: "Connect with like-minded partners in exclusive network", color: "from-purple-500 to-pink-500" },
-              { icon: TrendingUp, title: "Impact Reports", desc: "Detailed reports showing investment impact", color: "from-red-500 to-pink-500" },
-              { icon: Heart, title: "Legacy Building", desc: "Build lasting legacy through kingdom investment", color: "from-rose-500 to-red-500" }
-            ].map((benefit, idx) => {
-              const BenefitIcon = benefit.icon;
-              return (
-                <Card key={idx} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group overflow-hidden relative">
-                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${benefit.color}`} />
-                  <CardContent className="p-8 text-center">
-                    <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${benefit.color} flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <BenefitIcon className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">{benefit.title}</h3>
-                    <p className="text-gray-700 leading-relaxed font-medium">{benefit.desc}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <Card className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-lg">
+              <CardContent className="p-8 text-center">
+                <div className="text-5xl mb-4">🏦</div>
+                <h3 className="text-xl font-bold text-white mb-3">Bank Transfer</h3>
+                <p className="text-blue-100">Direct bank transfers for secure and reliable giving</p>
+              </CardContent>
+            </Card>
+            <Card className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-lg">
+              <CardContent className="p-8 text-center">
+                <div className="text-5xl mb-4">📱</div>
+                <h3 className="text-xl font-bold text-white mb-3">Mobile Money</h3>
+                <p className="text-blue-100">Convenient mobile payments for easy giving</p>
+              </CardContent>
+            </Card>
+            <Card className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-lg">
+              <CardContent className="p-8 text-center">
+                <div className="text-5xl mb-4">💳</div>
+                <h3 className="text-xl font-bold text-white mb-3">Online Payments</h3>
+                <p className="text-blue-100">Secure PayPal and credit card payments</p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
+
+
 
       {/* Partnership Application Form */}
       <section id="application" className="py-24 bg-white">
@@ -415,7 +346,7 @@ const Partnership = () => {
                         <SelectItem value="bronze">🧡 Bronze Partner - $50/month</SelectItem>
                         <SelectItem value="silver">⭐ Silver Partner - $100/month</SelectItem>
                         <SelectItem value="gold">✨ Gold Partner - $250/month</SelectItem>
-                        <SelectItem value="kingdom">👑 Kingdom Partner - $500+/month</SelectItem>
+
                         <SelectItem value="custom">💎 Custom Amount</SelectItem>
                       </SelectContent>
                     </Select>
@@ -475,47 +406,152 @@ const Partnership = () => {
         </div>
       </section>
 
-      {/* Payment Methods Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-950 via-blue-900 to-cyan-800 relative overflow-hidden">
+
+      {/* Why Partnership Section */}
+      {/* <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1">
+              <div className="inline-block px-4 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-full border border-blue-300 mb-6">
+                <p className="text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-cyan-600">Partnership Mission</p>
+              </div>
+              <h2 className="text-5xl font-bold mb-4 leading-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-cyan-700">
+                  Building God's Kingdom Together
+                </span>
+              </h2>
+              <p className="text-lg text-gray-700 mb-6 leading-relaxed font-medium">
+                Partnership with Fathers Heart Chapel International is about being part of something BIGGER than yourself and reaching far beyond your personal sphere of influence.
+              </p>
+              <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+                Through your partnership, we're able to reach millions through satellite broadcasting, support missionary work, feed the hungry, care for orphans, and build churches that transform communities across the globe.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <a href="#partnership-levels" className="scroll-smooth">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 text-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 font-bold w-full sm:w-auto"
+                  >
+                    Explore Levels
+                  </Button>
+                </a>
+                <a href="#application" className="scroll-smooth">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold w-full sm:w-auto"
+                  >
+                    Apply Now
+                  </Button>
+                </a>
+              </div>
+            </div>
+
+            <div className="order-1 lg:order-2 relative">
+              <div className="absolute -inset-6 bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 rounded-2xl opacity-20 blur-xl animate-pulse" />
+              <Card className="border-0 shadow-2xl overflow-hidden relative">
+                <CardContent className="p-0">
+                  <div className="aspect-[4/3] relative flex items-center justify-center overflow-hidden rounded-xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 to-cyan-600/40 z-10" />
+                    <img
+                      src={hero1}
+                      alt="Partnership Ministry"
+                      className="object-cover w-full h-full hover:scale-105 transition-transform duration-500 max-w-full"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section> */}
+
+      {/* Partnership Impact Stats */}
+      {/* <section className="py-20 bg-gradient-to-r from-blue-950 via-blue-900 to-cyan-800 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-10 right-20 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-10 left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-4">Secure Payment Options</h2>
-            <p className="text-blue-100 text-lg">Multiple ways to support the ministry</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <Card className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-lg">
               <CardContent className="p-8 text-center">
-                <div className="text-5xl mb-4">🏦</div>
-                <h3 className="text-xl font-bold text-white mb-3">Bank Transfer</h3>
-                <p className="text-blue-100">Direct bank transfers for secure and reliable giving</p>
+                <div className="text-5xl mb-4">🌍</div>
+                <h3 className="text-3xl font-bold text-white mb-2">50+</h3>
+                <p className="text-blue-100 font-semibold">Countries Reached</p>
               </CardContent>
             </Card>
             <Card className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-lg">
               <CardContent className="p-8 text-center">
-                <div className="text-5xl mb-4">📱</div>
-                <h3 className="text-xl font-bold text-white mb-3">Mobile Money</h3>
-                <p className="text-blue-100">Convenient mobile payments for easy giving</p>
+                <div className="text-5xl mb-4">💰</div>
+                <h3 className="text-3xl font-bold text-white mb-2">$Millions</h3>
+                <p className="text-blue-100 font-semibold">Invested in Ministry</p>
               </CardContent>
             </Card>
             <Card className="border-0 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-lg">
               <CardContent className="p-8 text-center">
-                <div className="text-5xl mb-4">💳</div>
-                <h3 className="text-xl font-bold text-white mb-3">Online Payments</h3>
-                <p className="text-blue-100">Secure PayPal and credit card payments</p>
+                <div className="text-5xl mb-4">🤝</div>
+                <h3 className="text-3xl font-bold text-white mb-2">10K+</h3>
+                <p className="text-blue-100 font-semibold">Active Partners</p>
               </CardContent>
             </Card>
           </div>
         </div>
-      </section>
+      </section> */}
 
+      
+
+      {/* Partnership Benefits */}
+      {/* <section className="py-24 bg-gradient-to-b from-blue-50 to-white relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-cyan-700">
+              Partnership Benefits
+            </h2>
+            <p className="text-xl text-gray-700 max-w-2xl mx-auto font-medium">
+              Exclusive benefits and recognition for your commitment
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { icon: Award, title: "Recognition", desc: "Acknowledged in annual partner appreciation events", color: "from-yellow-500 to-orange-500" },
+              { icon: BookOpen, title: "Exclusive Access", desc: "Early access to new teachings, books, and resources", color: "from-blue-500 to-cyan-500" },
+              { icon: Shield, title: "Prayer Coverage", desc: "Personalized prayer support from intercession team", color: "from-green-500 to-emerald-500" },
+              { icon: Users, title: "Community", desc: "Connect with like-minded partners in exclusive network", color: "from-purple-500 to-pink-500" },
+              { icon: TrendingUp, title: "Impact Reports", desc: "Detailed reports showing investment impact", color: "from-red-500 to-pink-500" },
+              { icon: Heart, title: "Legacy Building", desc: "Build lasting legacy through kingdom investment", color: "from-rose-500 to-red-500" }
+            ].map((benefit, idx) => {
+              const BenefitIcon = benefit.icon;
+              return (
+                <Card key={idx} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group overflow-hidden relative">
+                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${benefit.color}`} />
+                  <CardContent className="p-8 text-center">
+                    <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${benefit.color} flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <BenefitIcon className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">{benefit.title}</h3>
+                    <p className="text-gray-700 leading-relaxed font-medium">{benefit.desc}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section> */}
+
+      
+
+      
       {/* Call to Action Section */}
-      <section className="py-20 bg-white">
+      {/* <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <Card className="border-0 bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 shadow-2xl overflow-hidden">
             <CardContent className="p-12 md:p-16 text-center">
@@ -536,99 +572,10 @@ const Partnership = () => {
             </CardContent>
           </Card>
         </div>
-      </section>
+      </section> */}
 
       {/* Enhanced Footer */}
-      <footer className="bg-gradient-to-b from-gray-900 to-gray-950 text-white py-16 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-            {/* About */}
-            <div>
-              <h3 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">
-                Fathers Heart Chapel
-              </h3>
-              <p className="text-gray-300 leading-relaxed">
-                Transforming lives through faith, worship, and service. Partner with us to impact nations for God's kingdom.
-              </p>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-white">Quick Links</h3>
-              <ul className="space-y-3">
-                {[
-                  { name: "Services", link: "/services" },
-                  { name: "About Us", link: "/about" },
-                  { name: "Live Stream", link: "/live" },
-                  { name: "Giving", link: "/give/offering" }
-                ].map((item, index) => (
-                  <li key={index}>
-                    <Link
-                      to={item.link}
-                      className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 font-medium hover:underline"
-                    >
-                      {item.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-white">Contact</h3>
-              <ul className="space-y-3 text-gray-300">
-                <li className="flex items-start gap-3">
-                  <Phone className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-1" />
-                  <span>+233 24 352 7174</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Mail className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-1" />
-                  <a href="mailto:info@fathersheart.org" className="hover:text-cyan-400 transition-colors">
-                    info@fathersheart.org
-                  </a>
-                </li>
-                <li className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-1" />
-                  <span>Kumasi, Ghana & Global</span>
-                </li>
-              </ul>
-
-              <div className="flex gap-4 mt-6">
-                {[
-                  { icon: Facebook, link: "#" },
-                  { icon: Instagram, link: "#" },
-                  { icon: Youtube, link: "#" }
-                ].map((social, idx) => (
-                  <a
-                    key={idx}
-                    href={social.link}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-400 transition-all duration-300 text-white"
-                  >
-                    <social.icon className="w-5 h-5" />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-white/20 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-gray-400">
-                &copy; {new Date().getFullYear()} Fathers Heart Chapel International. All rights reserved.
-              </p>
-              <p className="text-sm text-gray-400">
-                Transforming Lives • Impacting Nations • Building Legacy
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

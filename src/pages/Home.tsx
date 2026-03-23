@@ -9,7 +9,7 @@ import hero3 from "@/assets/hero3.jpeg";
 import hero6 from "@/assets/hero6.jpg";
 import vid from "@/assets/vid.mp4";
 import NewsCarousel from "@/components/ui/news-carousel";
-import news from "@/data/news";
+import { news } from "@/data/news";
 import { Heart, BookOpen, Users, Globe, Mail, Phone, MapPin, Facebook, Instagram, Youtube } from "lucide-react";
 
 const Home = () => {
@@ -108,7 +108,7 @@ const Home = () => {
 
   // ✅ Correct Order: FHC → Rev Prince → Offering → Partnership
   const quickActions = [
-    { title: "FHCI", description: "Father’s Heart Chapel Int. – Equipping men to fulfill the Father’s desire", icon: Globe, gradient: "from-blue-700 to-cyan-500", link: "/fhc" },
+    { title: "FHCI", description: "Father’s Heart Chapel Int. – Equipping this generation to fulfill the Father’s desire", icon: Globe, gradient: "from-blue-700 to-cyan-500", link: "/fhc" },
     { title: "REV PRINCE MINISTRIES", description: "Rev. Prince Bediako Appau – Fulfilling Divine Calling, Living as Christ’s Representative", icon: BookOpen, gradient: "from-blue-700 to-cyan-500", link: "/rev-prince-ministries" },
     { title: "OFFERING", description: "Give Joyfully, Bless Generously", icon: Heart, gradient: "from-blue-700 to-cyan-500", link: "/give/offering" },
     { title: "PARTNER NOW", description: "Be a Partner. Fuel the Missions and Transform Lives.", icon: Users, gradient: "from-blue-700 to-cyan-500", link: "/partnership" }
@@ -193,7 +193,7 @@ const Home = () => {
           <div className="max-w-4xl mx-auto text-center text-white">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">Welcome to Martyrs Of Christ World Outreach</h2>
             <p className="text-xl mb-8 opacity-90">
-              A Christian youth non-denominational evangelical movement fully commited to missions and mandated to empower and equip youth and adults to be effective witnesses of Christ and also live as agents of change in the world at large.
+             A Christian youth non-denominational evangelical movement fully commited to missions and mandated to empower the saints to be effective witnesses of Christ and also live as agents of change in the world at large.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/mocwo">
@@ -240,7 +240,7 @@ const Home = () => {
           <div>
             <h3 className="text-xl font-bold mb-4">Martyrs Of Christ World Outreach</h3>
             <p className="text-muted-foreground">
-              Transforming lives through faith, worship, and service. Join our vibrant community and grow in your spiritual journey.
+             Transforming lives  to be effective witnesses of Christ and also live as agents of change in the world at large.
             </p>
           </div>
 
@@ -251,6 +251,7 @@ const Home = () => {
               {[ 
                 { name: "Services", link: "/services" },
                 { name: "About Us", link: "/about" },
+                { name: "News & Events", link: "/news" },
                 { name: "Partnership", link: "/partnership" },
                 { name: "Giving", link: "/give/offering" },
                 { name: "Contact", link: "/contact" }

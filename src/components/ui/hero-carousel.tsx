@@ -18,9 +18,10 @@ interface HeroCarouselProps {
   slides: CarouselSlide[];
   autoPlay?: boolean;
   interval?: number;
+  showContent?: boolean;
 }
 
-const HeroCarousel = ({ slides, autoPlay = true, interval = 5000 }: HeroCarouselProps) => {
+const HeroCarousel = ({ slides, autoPlay = true, interval = 5000, showContent = true }: HeroCarouselProps) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const navigate = useNavigate();
 
@@ -64,45 +65,51 @@ const HeroCarousel = ({ slides, autoPlay = true, interval = 5000 }: HeroCarousel
             ) : (
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${slide.image})` }}
+                style={{ backgroundImage: `url("${slide.image}")` }}
               />
             )}
 
             {/* Dark overlay for readability */}
             <div className="absolute inset-0 bg-black/40" />
 
-            {/* 🍷 Wine Gradient overlay (per-slide if defined, otherwise fallback wine gradient) */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-r ${
-                slide.gradient || "from-rose-900 via-purple-900 to-fuchsia-700"
-              } opacity-70`}
-            />
+            {/* Gradient overlay (only if gradient is provided) */}
+            {slide.gradient && (
+              <div
+                className={`absolute inset-0 bg-gradient-to-r ${slide.gradient} opacity-70`}
+              />
+            )}
 
             {/* Slide Content */}
-            <div className="relative z-10 flex items-center justify-center h-full">
-              <div className="container mx-auto px-4">
-                <div className="max-w-4xl mx-auto text-center text-white">
-                  <h2 className="text-sm font-medium uppercase tracking-wider mb-4 animate-slide-up opacity-80">
-                    {slide.subtitle}
-                  </h2>
-                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight animate-slide-up">
-                    {slide.title}
-                  </h1>
-                  <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto opacity-90 animate-slide-up">
-                    {slide.description}
-                  </p>
-                  <div className="animate-slide-up">
-                    <Button
-                      size="lg"
-                      onClick={() => navigate(slide.ctaLink)}
-                      className="bg-secondary hover:bg-secondary/90 text-secondary-foreground px-8 py-6 text-lg font-semibold shadow-divine transition-all duration-300 hover:scale-105"
-                    >
-                      {slide.ctaText}
-                    </Button>
+            {showContent && (
+              <div className="relative z-10 flex items-center justify-center h-full">
+                <div className="container mx-auto px-4">
+                  <div className="max-w-4xl mx-auto text-center text-white">
+                    <h2 className="text-sm font-medium uppercase tracking-wider mb-4 animate-slide-up opacity-80">
+                      {slide.subtitle}
+                    </h2>
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight animate-slide-up">
+                      {slide.title}
+                    </h1>
+                    <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto opacity-90 animate-slide-up">
+                      {slide.description}
+                    </p>
+                    <div className="animate-slide-up">
+                      <Button
+                        size="lg"
+                        onClick={() => navigate(slide.ctaLink)}
+                        className={`bg-secondary hover:bg-secondary/90 px-8 py-6 text-lg font-semibold shadow-divine transition-all duration-300 hover:scale-105 ${
+                          (slide.ctaText === "Join Our Family" || slide.ctaText === "Partner With Us")
+                            ? "!text-blue-900"
+                            : "text-secondary-foreground"
+                        }`}
+                      >
+                        {slide.ctaText}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         ))}
       </div>

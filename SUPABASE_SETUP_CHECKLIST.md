@@ -29,9 +29,9 @@
 
 ### Phase 2: Authentication Setup
 - [ ] Go to Authentication → Users
-- [ ] Create admin user with your email
+- [ ] Create admin user with your email (or use the protected `POST /api/create-admin` endpoint)
 - [ ] Set a strong password
-- [ ] Note: This creates both an Auth user and admin_users record
+- [ ] Note: This creates both an Auth user and an `admin_users` record; the `auth_uid` column is required to link the Auth user to the admin row. If you have existing admins, run `scripts/populate-admin-auth-uid.js` to populate `auth_uid` values.
 
 ### Phase 3: Environment Configuration
 - [ ] Copy `.env.example` to `.env.local` (if not already done)

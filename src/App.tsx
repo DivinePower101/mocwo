@@ -29,6 +29,7 @@ import MediaPage from "./pages/MediaPage";
 import ReportPage from "./pages/ReportPage";
 import News from "./pages/News";
 import MembershipForm from "./pages/MembershipForm";
+import Leadership from "./pages/Leadership";
 
 const queryClient = new QueryClient();
 
@@ -38,7 +39,7 @@ export default function App() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Navigation />
           <Routes>
             {/* Main Pages */}
@@ -61,12 +62,16 @@ export default function App() {
 
             {/* News */}
             <Route path="/news" element={<News />} />
+            <Route path="/news/:id" element={<News />} />
 
             {/* Schools + Media + Report */}
             <Route path="/schools" element={<SchoolVisits />} />
             <Route path="/communities" element={<Communities />} />
             <Route path="/media/:id" element={<MediaPage />} />
             <Route path="/report/:id" element={<ReportPage />} />
+
+            {/* Leadership (not in top navigation) */}
+            <Route path="/leadership" element={<Leadership />} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

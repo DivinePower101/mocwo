@@ -19,7 +19,7 @@ const Navigation = () => {
     // { name: "Contact", path: "/contact" },
     // { name: "Prayer", path: "/prayer-ai" }, // ✅ Prayer AI Page
     { name: "FHCI", path: "/fhc" }, // ✅ FHC Page
-    {name: "Rev.Prince", path: "/rev-prince-ministries"}, // ✅ Rev.Prince External Link
+    {name: "Rev. Prince", path: "/rev-prince-ministries"}, // ✅ Rev.Prince External Link
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -52,7 +52,7 @@ const Navigation = () => {
                     : "text-muted-foreground hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-400 hover:bg-clip-text hover:text-transparent"
                   }`}
               >
-                <span>{item.name}</span>
+                <span className="uppercase">{item.name}</span>
                 {isActive(item.path) && (
                   <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full" />
                 )}
@@ -86,7 +86,7 @@ const Navigation = () => {
                       : "text-muted-foreground hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-400 hover:text-white"
                     }`}
                 >
-                  {item.name}
+                  <span className="uppercase">{item.name}</span>
                 </Link>
               ))}
               <div className="px-4 pt-2">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
+import { useToast } from "@/hooks/use-toast";
 
 import {
   Heart,
@@ -26,9 +27,18 @@ import {
   Building,
 } from "lucide-react";
 
-import { PaystackButton } from "react-paystack";
 import { partnershipLevels } from "@/data/PartnershipLevels";
 import { paystackConfig } from "@/config/paystack";
+
+declare global {
+  interface Window {
+    PaystackPop: {
+      setup: (options: any) => {
+        openIframe: () => void;
+      };
+    };
+  }
+}
 
 const GivePage = () => {
   const { type } = useParams<{ type?: string }>();
@@ -36,6 +46,11 @@ const GivePage = () => {
   const [currency, setCurrency] = useState("USD");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [frequency, setFrequency] = useState("one-time");
+  const [email, setEmail] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { toast } = useToast();
+  const paystackRef = useRef<any>(null);
 
   // Match type param to partnership level slug
   const level = partnershipLevels.find((lvl) => lvl.slug === type);
@@ -47,14 +62,41 @@ const GivePage = () => {
     // Extract numeric amount from string like "$50/month"
     const numericAmount = parseInt(level.amount.replace(/[^0-9]/g, ""));
 
-    // Paystack expects amount in kobo/cents, so multiply by 100
-    const paystackProps = {
-      email: paystackConfig.email,
-      amount: numericAmount * 100,
-      publicKey: paystackConfig.publicKey,
-      text: `Become a ${level.title}`,
-      onSuccess: () => alert("🎉 Payment Successful! Thank you for partnering."),
-      onClose: () => alert("❌ Payment was cancelled."),
+    const handlePartnershipPayment = () => {
+      if (!email) {
+        toast({
+          title: "Email Required",
+          description: "Please enter your email address to proceed",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsProcessing(true);
+
+      const handler = (window as any).PaystackPop.setup({
+        key: paystackConfig.publicKey,
+        email: email,
+        amount: numericAmount * 100,
+        currency: "USD",
+        ref: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        onClose: () => {
+          toast({
+            title: "Payment Cancelled",
+            description: "Partnership registration was not completed",
+          });
+          setIsProcessing(false);
+        },
+        onSuccess: (response: any) => {
+          toast({
+            title: "🎉 Partnership Successful!",
+            description: `Thank you for becoming a ${level.title}. Transaction ref: ${response.reference}`,
+          });
+          setIsProcessing(false);
+          setEmail("");
+        },
+      });
+      handler.openIframe();
     };
 
     return (
@@ -79,10 +121,23 @@ const GivePage = () => {
                 ))}
               </ul>
 
-              <PaystackButton
-                {...paystackProps}
+              <div className="mb-6">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="text-lg h-12 mb-4"
+                />
+              </div>
+
+              <Button
+                onClick={handlePartnershipPayment}
+                disabled={!email || isProcessing}
                 className="bg-primary text-white px-8 py-4 rounded-lg text-lg font-semibold"
-              />
+              >
+                {isProcessing ? "Processing..." : `Become a ${level.title}`}
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -175,14 +230,98 @@ const GivePage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Give submission:", {
-      type,
-      amount,
-      currency,
-      paymentMethod,
-      frequency,
+
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!amount || !paymentMethod) {
+      toast({
+        title: "Missing Information",
+        description: "Please select an amount and payment method",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (paymentMethod === "mobile" && !mobileNumber) {
+      toast({
+        title: "Mobile Number Required",
+        description: "Please enter your mobile money number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+
+    if (paymentMethod === "card") {
+      // Use Paystack for card payments
+      initiatePaystackPayment("card");
+    } else if (paymentMethod === "mobile") {
+      // Use Paystack with mobile money channel
+      initiatePaystackPayment("mobile_money", mobileNumber);
+    } else if (paymentMethod === "bank") {
+      // Use Paystack with bank transfer channel
+      initiatePaystackPayment("bank_transfer");
+    }
+  };
+
+  const initiatePaystackPayment = (paymentChannel: string, phone?: string) => {
+    const numericAmount = parseInt(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+      return;
+    }
+
+    // Initialize Paystack payment
+    const paymentConfig: any = {
+      key: paystackConfig.publicKey,
+      email: email,
+      amount: numericAmount * 100, // Paystack expects amount in kobo/cents
+      currency: currency,
+      ref: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      channels: [paymentChannel],
+    };
+
+    // Add phone number for mobile money
+    if (phone && paymentChannel === "mobile_money") {
+      paymentConfig.phone = phone;
+    }
+
+    const handler = (window as any).PaystackPop.setup({
+      ...paymentConfig,
+      onClose: () => {
+        toast({
+          title: "Payment Cancelled",
+          description: "Your payment was not completed",
+        });
+        setIsProcessing(false);
+      },
+      onSuccess: (response: any) => {
+        toast({
+          title: "Payment Successful! 🎉",
+          description: `Thank you for your ${currentGive.title}. Transaction ref: ${response.reference}`,
+        });
+        setIsProcessing(false);
+        // Reset form
+        setAmount("");
+        setEmail("");
+        setPaymentMethod("");
+        setMobileNumber("");
+      },
     });
-    // TODO: Add payment processing logic here
+    handler.openIframe();
   };
 
   return (
@@ -220,6 +359,22 @@ const GivePage = () => {
               </CardHeader>
               <CardContent className="p-8">
                 <form onSubmit={handleSubmit} className="space-y-8">
+                  {/* Email */}
+                  <div>
+                    <Label htmlFor="email" className="text-lg font-semibold mb-2 block">
+                      Email Address
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="text-lg h-12"
+                      required
+                    />
+                  </div>
+
                   {/* Amount */}
                   <div>
                     <Label className="text-lg font-semibold mb-4 block">
@@ -322,12 +477,33 @@ const GivePage = () => {
                     </RadioGroup>
                   </div>
 
+                  {/* Mobile Number (only for Mobile Money) */}
+                  {paymentMethod === "mobile" && (
+                    <div>
+                      <Label htmlFor="mobile" className="text-lg font-semibold mb-2 block">
+                        Mobile Money Number
+                      </Label>
+                      <Input
+                        id="mobile"
+                        type="tel"
+                        placeholder="e.g., +263 78 123 4567 or 0781234567"
+                        value={mobileNumber}
+                        onChange={(e) => setMobileNumber(e.target.value)}
+                        className="text-lg h-12"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Enter the mobile money number payment will be made from
+                      </p>
+                    </div>
+                  )}
+
                   <Button
                     type="submit"
-                    disabled={!amount || !paymentMethod}
+                    disabled={!amount || !paymentMethod || !email || isProcessing || (paymentMethod === "mobile" && !mobileNumber)}
                     className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-blue-950 via-blue-800 to-cyan-600/70"
                   >
-                    Give Now
+                    {isProcessing ? "Processing..." : "Give Now"}
                   </Button>
                 </form>
               </CardContent>

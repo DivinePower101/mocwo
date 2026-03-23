@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Mail, Phone, MapPin, Heart } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const MembershipForm = () => {
   const { toast } = useToast();
@@ -58,12 +59,30 @@ const MembershipForm = () => {
     setLoading(true);
 
     try {
-      // TODO: Submit form data to backend/Supabase
-      console.log("Form Data:", formData);
+      const { error } = await (supabase as any)
+        .from('membership_requests')
+        .insert([{
+          first_name: formData.fullName.split(' ')[0],
+          last_name: formData.fullName.split(' ').slice(1).join(' ') || '',
+          email: formData.email,
+          phone: formData.phone,
+          date_of_birth: formData.dateOfBirth || null,
+          gender: null,
+          marital_status: formData.maritalStatus,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          country: formData.country,
+          membership_type: 'member',
+          message: formData.message,
+          status: 'approved'
+        }]);
+
+      if (error) throw error;
       
       toast({
         title: "Welcome to Our Family! 🙏",
-        description: "Thank you for joining us. We'll be in touch soon!",
+        description: "Thank you for joining us. You are now an approved member!",
         duration: 5000,
       });
 

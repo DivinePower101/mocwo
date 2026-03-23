@@ -1,5 +1,16 @@
 #!/usr/bin/env node
-const axios = require('axios');
+import axios from 'axios';
+import dotenv from 'dotenv';
+
+// Load environment variables from parent directory
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.resolve(__dirname, '../.env');
+
+dotenv.config({ path: envPath });
 
 const SERVER_URL = process.env.SERVER_URL;
 const ADMIN_CREATION_KEY = process.env.ADMIN_CREATION_KEY;

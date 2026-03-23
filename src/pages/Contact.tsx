@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Footer from "@/components/Footer";
 import { MapPin, Phone, Mail, Clock, Globe, Send, MessageCircle, Heart, Heart as HeartIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import hero1 from "@/assets/hero1.jpeg";
@@ -484,77 +485,7 @@ const Contact = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-950 text-white py-16">
-        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          <div>
-            <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-cyan-400 text-transparent bg-clip-text">
-              Fathers Heart Chapel
-            </h3>
-            <p className="text-muted-foreground">
-              Transforming lives through faith, worship, and service. Join our vibrant community and grow in your spiritual journey.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-bold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              {[
-                { name: "Services", link: "/services" },
-                { name: "About Us", link: "/about" },
-                { name: "Partnership", link: "/partnership" },
-                { name: "Giving", link: "/give/offering" },
-                { name: "Contact", link: "/contact" }
-              ].map((item, index) => (
-                <li key={index}>
-                  <Link
-                    to={item.link}
-                    className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-400 hover:scale-105 hover:underline transition-transform duration-300"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-bold mb-4">Contact Info</h3>
-            <ul className="space-y-2 text-muted-foreground">
-              <li className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                123 Church Street, Accra, Ghana
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone className="w-5 h-5" />
-                +233 24 352 7174
-              </li>
-              <li className="flex items-center gap-2">
-                <Mail className="w-5 h-5" />
-                info@fathersheart.org
-              </li>
-            </ul>
-            <div className="flex gap-4 mt-4">
-              {[
-                { icon: <Facebook className="w-5 h-5 text-white" />, link: "#" },
-                { icon: <Instagram className="w-5 h-5 text-white" />, link: "#" },
-                { icon: <Youtube className="w-5 h-5 text-white" />, link: "#" }
-              ].map((social, idx) => (
-                <a
-                  key={idx}
-                  href={social.link}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-400 transition-all duration-300"
-                >
-                  {social.icon}
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-gray-800 pt-8 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Fathers Heart Chapel International. All rights reserved.
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

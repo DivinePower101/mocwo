@@ -7,7 +7,7 @@ export interface PrayerRequestPayload {
   phone: string;
   location: string;
   prayer: string;
-  method: "sms" | "whatsapp";
+  method: "sms" | "whatsapp" | "email";
 }
 
 export interface ApiResponse<T = any> {

@@ -1,9 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, Play, Zap, Heart, Radio, Mail, Phone, MapPin, Facebook, Instagram, Youtube } from "lucide-react";
+import Footer from "@/components/Footer";
+import { Calendar, Clock, Users, Play, Zap, Heart, Radio, Mail, Phone, MapPin, Facebook, Instagram, Youtube, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { NotificationSignup } from "@/components/NotificationSignup";
+import { useState } from "react";
 
 const Services = () => {
+  const [showPlanVisit, setShowPlanVisit] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
   const weeklyServices = [
     {
       title: "Sunday Service",
@@ -113,6 +118,7 @@ const Services = () => {
               <Button
                 size="lg"
                 className="bg-white/10 backdrop-blur-md border-2 border-white text-white hover:bg-white/20 px-8 py-6 text-lg font-bold rounded-full transition-all duration-300 hover:scale-105"
+                onClick={() => setShowPlanVisit(true)}
               >
                 📅 Plan Your Visit
               </Button>
@@ -311,6 +317,17 @@ const Services = () => {
         </div>
       </section>
 
+      {/* Notification Signup Section */}
+      <section className="py-24 bg-gradient-to-b from-background to-muted/30">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <NotificationSignup
+            title="Never Miss a Service"
+            description="Subscribe to get email notifications about all our upcoming livestreams, prayer encounters, and special programs"
+            variant="default"
+          />
+        </div>
+      </section>
+
       {/* Service Information */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4">
@@ -425,68 +442,190 @@ const Services = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-950 text-white py-16">
-        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          <div>
-            <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-cyan-400 text-transparent bg-clip-text">
-              Fathers Heart Chapel
-            </h3>
-            <p className="text-muted-foreground">
-              Transforming lives through faith, worship, and service. Join our vibrant community and grow in your spiritual journey.
-            </p>
-          </div>
+      <Footer />
 
-          <div>
-            <h3 className="text-xl font-bold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              {[
-                { name: "Home", link: "/" },
-                { name: "About Us", link: "/about" },
-                { name: "MOCWO", link: "/mocwo" },
-                { name: "Partnership", link: "/partnership" },
-                { name: "Contact", link: "/contact" }
-              ].map((item, index) => (
-                <li key={index}>
-                  <Link
-                    to={item.link}
-                    className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-400 hover:scale-105 hover:underline transition-transform duration-300"
+      {/* Plan Your Visit Modal */}
+      {showPlanVisit && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-300 flex flex-col">
+            {!selectedService ? (
+              <>
+                <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-6 flex items-start justify-between">
+                  <div>
+                    <h2 className="text-3xl font-black text-white mb-2">Hey! 👋</h2>
+                    <p className="text-lg text-white/95">We're glad you're thinking of visiting 🙌</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowPlanVisit(false);
+                      setSelectedService(null);
+                    }}
+                    className="text-white hover:bg-white/20 rounded-full p-2 transition-all"
                   >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
 
-          <div>
-            <h3 className="text-xl font-bold mb-4">Contact Us</h3>
-            <ul className="space-y-2 text-muted-foreground">
-              <li className="flex items-center gap-2"><MapPin className="w-5 h-5" /> 123 Church Street, Accra, Ghana</li>
-              <li className="flex items-center gap-2"><Phone className="w-5 h-5" /> +233 24 352 7174</li>
-              <li className="flex items-center gap-2"><Mail className="w-5 h-5" /> info@fathersheart.org</li>
-            </ul>
-            <div className="flex gap-4 mt-4">
-              {[
-                { icon: <Facebook className="w-5 h-5 text-white" />, link: "#" },
-                { icon: <Instagram className="w-5 h-5 text-white" />, link: "#" },
-                { icon: <Youtube className="w-5 h-5 text-white" />, link: "#" }
-              ].map((social, idx) => (
-                <a
-                  key={idx}
-                  href={social.link}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-400 transition-all duration-300"
-                >
-                  {social.icon}
-                </a>
-              ))}
-            </div>
+                <div className="p-8">
+                  <p className="text-lg font-semibold text-gray-800 mb-6 leading-relaxed">
+                    Let's get you set up real quick so your first time feels easy and chill.
+                  </p>
+
+                  <p className="text-center text-gray-600 font-bold mb-6">
+                    Which service are you planning to attend? 👇
+                  </p>
+
+                  <div className="space-y-3">
+                    {[
+                      { title: "Sunday Service", time: "8AM | 10AM", emoji: "🎵" },
+                      { title: "Wednesday Midweek Service", time: "7PM", emoji: "📖" },
+                      { title: "Friday Prayer Encounter", time: "7PM", emoji: "⛪" },
+                      { title: "Online/TikTok Live", time: "Varies", emoji: "📱" }
+                    ].map((service, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedService(service)}
+                        className="w-full p-4 text-left rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-2xl">{service.emoji}</span>
+                              <span className="font-bold text-gray-800 group-hover:text-blue-600">{service.title}</span>
+                            </div>
+                            <div className="text-sm text-gray-600 flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              {service.time}
+                            </div>
+                          </div>
+                          <div className="text-blue-600 group-hover:text-blue-700 font-bold">→</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-8 p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-gray-700 text-center">
+                      <span className="font-bold">Pro tip:</span> Subscribe below to get reminders for your chosen service!
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full mt-6 font-bold rounded-full"
+                    onClick={() => setShowPlanVisit(false)}
+                  >
+                    I'll Decide Later
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-gradient-to-r from-green-600 to-emerald-500 p-6 flex items-start justify-between">
+                  <div>
+                    <h2 className="text-3xl font-black text-white mb-2">Perfect! ✨</h2>
+                    <p className="text-lg text-white/95">You're all set</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowPlanVisit(false);
+                      setSelectedService(null);
+                    }}
+                    className="text-white hover:bg-white/20 rounded-full p-2 transition-all"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="p-8">
+                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border-2 border-blue-200">
+                    <div className="flex items-start gap-3">
+                      <span className="text-4xl">{selectedService.emoji}</span>
+                      <div>
+                        <p className="font-bold text-gray-800 text-lg">{selectedService.title}</p>
+                        <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                          <Clock className="w-4 h-4" />
+                          {selectedService.time}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-gray-700 mb-6 leading-relaxed">
+                    Awesome! We can't wait to see you at {selectedService.title}. Here's what we suggest next:
+                  </p>
+
+                  <div className="space-y-3 mb-6">
+                    <button
+                      onClick={() => {
+                        const event = {
+                          title: selectedService.title,
+                          description: `Join us for ${selectedService.title}`,
+                          startTime: new Date().toISOString(),
+                          endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+                        };
+                        const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&details=${encodeURIComponent(event.description)}&dates=${event.startTime.replace(/[-:]/g, '').split('.')[0]}Z/${event.endTime.replace(/[-:]/g, '').split('.')[0]}Z`;
+                        window.open(calendarUrl, '_blank');
+                      }}
+                      className="w-full p-4 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 transition-all text-left group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <p className="font-bold text-gray-800 group-hover:text-blue-600">Add to Calendar</p>
+                          <p className="text-xs text-gray-600">Never forget the date & time</p>
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowPlanVisit(false);
+                        setSelectedService(null);
+                        document.getElementById('notification-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="w-full p-4 rounded-lg border-2 border-orange-200 bg-orange-50 hover:bg-orange-100 hover:border-orange-400 transition-all text-left group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-5 h-5 text-orange-600" />
+                        <div>
+                          <p className="font-bold text-gray-800 group-hover:text-orange-600">Get Reminders</p>
+                          <p className="text-xs text-gray-600">Email & WhatsApp notifications</p>
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        window.open(`https://maps.google.com/?q=Fathers+Heart+Chapel+Accra`, '_blank');
+                      }}
+                      className="w-full p-4 rounded-lg border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-400 transition-all text-left group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <MapPin className="w-5 h-5 text-purple-600" />
+                        <div>
+                          <p className="font-bold text-gray-800 group-hover:text-purple-600">Get Directions</p>
+                          <p className="text-xs text-gray-600">See our location on the map</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  <Button
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-bold rounded-full py-3"
+                    onClick={() => {
+                      setShowPlanVisit(false);
+                      setSelectedService(null);
+                    }}
+                  >
+                    Done! See You Soon 🙌
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
-
-        <div className="border-t border-gray-800 pt-8 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Fathers Heart Chapel International. All rights reserved.
-        </div>
-      </footer>
+      )}
     </div>
   );
 };

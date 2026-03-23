@@ -134,3 +134,13 @@ The endpoint will:
 
 Security: keep `SUPABASE_SERVICE_ROLE_KEY` and `ADMIN_CREATION_KEY` in a secure server environment and never commit them.
 
+## Prayer Request WhatsApp Numbers
+
+Prayer requests should be sent to these WhatsApp numbers:
+
+- **055 811 7792**
+- **0544 733469**
+- **0593 357615**
+
+These numbers are monitored for prayer requests and pastoral support. Members can send their prayer requests through WhatsApp for immediate attention and intercession.
+

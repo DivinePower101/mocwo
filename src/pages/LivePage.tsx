@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, Users, MessageSquare, Heart, Settings, Maximize, Volume2, Share, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationSignup } from "@/components/NotificationSignup";
 
 // YouTube Configuration
 const YOUTUBE_CHANNEL_ID = import.meta.env.VITE_YOUTUBE_CHANNEL_ID || "";
@@ -533,6 +534,14 @@ const handleLoadLink = (link?: string) => {
                 </Link>
               </CardContent>
             </Card>
+
+            {/* Notification Signup */}
+            <NotificationSignup
+              variant="card"
+              title="Never Miss a Stream"
+              description="Get notifications about upcoming livestreams and programs"
+              defaultNotificationType="livestream"
+            />
           </div>
         </div>
       </div>

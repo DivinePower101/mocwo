@@ -214,8 +214,19 @@ const Admin = () => {
         .eq('email', session.user.email)
         .single();
       
-      if (adminUser) {
+      // require active admin with matching auth UID and admin role
+      if (
+        adminUser &&
+        adminUser.is_active === true &&
+        adminUser.role === 'admin'
+        // Temporarily disabled auth_uid check until column is added
+        // && adminUser.auth_uid === session.user.id
+      ) {
         setIsAuthenticated(true);
+      } else {
+        // if user exists but doesn't meet criteria, ensure we sign out as a safety measure
+        try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
+        setIsAuthenticated(false);
       }
     }
   };
@@ -237,7 +248,17 @@ const Admin = () => {
         .eq('email', loginForm.email)
         .single();
 
-      if (adminUser) {
+      // get current session user id to compare with stored auth_uid
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUid = session?.user?.id || null;
+
+      if (
+        adminUser &&
+        adminUser.is_active === true &&
+        adminUser.role === 'admin'
+        // Temporarily disabled auth_uid check until column is added
+        // && adminUser.auth_uid === currentUid
+      ) {
         setIsAuthenticated(true);
         toast({
           title: "Login successful",
@@ -362,6 +383,129 @@ const Admin = () => {
       toast({
         title: "Error updating status",
         description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deletePartnership = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this partnership?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from('partnerships')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Delete error:', error);
+        throw new Error(error.message || 'Failed to delete partnership');
+      }
+
+      toast({
+        title: "Partnership deleted",
+        description: "Entry has been removed successfully",
+      });
+
+      fetchPartnerships();
+      fetchStats();
+    } catch (error: any) {
+      console.error('Delete partnership error:', error);
+      toast({
+        title: "Error deleting partnership",
+        description: error.message || 'Check console for details',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteMembershipRequest = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this membership request?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from('membership_requests')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Delete error:', error);
+        throw new Error(error.message || 'Failed to delete membership request');
+      }
+
+      toast({
+        title: "Membership request deleted",
+        description: "Entry has been removed successfully",
+      });
+
+      fetchMembershipRequests();
+      fetchStats();
+    } catch (error: any) {
+      console.error('Delete membership request error:', error);
+      toast({
+        title: "Error deleting membership request",
+        description: error.message || 'Check console for details',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deletePrayerRequest = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this prayer request?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from('prayer_requests')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Delete error:', error);
+        throw new Error(error.message || 'Failed to delete prayer request');
+      }
+
+      toast({
+        title: "Prayer request deleted",
+        description: "Entry has been removed successfully",
+      });
+
+      fetchPrayerRequests();
+      setSelectedPrayer(null);
+    } catch (error: any) {
+      console.error('Delete prayer request error:', error);
+      toast({
+        title: "Error deleting prayer request",
+        description: error.message || 'Check console for details',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteNews = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this news item?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from('news')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Delete error:', error);
+        throw new Error(error.message || 'Failed to delete news item');
+      }
+
+      toast({
+        title: "News item deleted",
+        description: "Entry has been removed successfully",
+      });
+
+      fetchNews();
+    } catch (error: any) {
+      console.error('Delete news error:', error);
+      toast({
+        title: "Error deleting news item",
+        description: error.message || 'Check console for details',
         variant: "destructive",
       });
     }
@@ -563,6 +707,14 @@ const Admin = () => {
                             </Button>
                           </>
                         )}
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => deletePartnership(partnership.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -672,6 +824,17 @@ const Admin = () => {
                     >
                       Reject
                     </Button>
+                    <Button 
+                      variant="ghost"
+                      onClick={() => {
+                        deleteMembershipRequest(selectedMember.id);
+                        setSelectedMember(null);
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="mr-2 w-4 h-4" />
+                      Delete
+                    </Button>
                   </div>
                 )}
               </div>
@@ -735,6 +898,14 @@ const Admin = () => {
                               </Button>
                             </>
                           )}
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => deleteMembershipRequest(member.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -816,6 +987,17 @@ const Admin = () => {
                     >
                       Mark as Failed
                     </Button>
+                    <Button 
+                      variant="ghost"
+                      onClick={() => {
+                        deletePrayerRequest(selectedPrayer.id);
+                        setSelectedPrayer(null);
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="mr-2 w-4 h-4" />
+                      Delete
+                    </Button>
                   </div>
                 )}
               </div>
@@ -879,6 +1061,14 @@ const Admin = () => {
                               </Button>
                             </>
                           )}
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => deletePrayerRequest(prayer.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

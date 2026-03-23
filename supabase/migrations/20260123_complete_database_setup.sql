@@ -65,6 +65,12 @@ CREATE TABLE IF NOT EXISTS public.partnerships (
 -- Enable RLS
 ALTER TABLE public.partnerships ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Anyone can create partnerships" ON public.partnerships;
+DROP POLICY IF EXISTS "Admins can view all partnerships" ON public.partnerships;
+DROP POLICY IF EXISTS "Admins can update partnerships" ON public.partnerships;
+DROP POLICY IF EXISTS "Admins can delete partnerships" ON public.partnerships;
+
 -- Create policies for partnerships
 CREATE POLICY "Anyone can create partnerships" 
 ON public.partnerships 
@@ -74,6 +80,17 @@ WITH CHECK (true);
 CREATE POLICY "Admins can view all partnerships" 
 ON public.partnerships 
 FOR SELECT 
+USING (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()));
+
+CREATE POLICY "Admins can update partnerships"
+ON public.partnerships
+FOR UPDATE
+USING (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()))
+WITH CHECK (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()));
+
+CREATE POLICY "Admins can delete partnerships"
+ON public.partnerships
+FOR DELETE
 USING (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()));
 
 -- Create trigger
@@ -100,6 +117,12 @@ CREATE TABLE IF NOT EXISTS public.news (
 
 -- Enable row level security
 ALTER TABLE public.news ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Admins can select news" ON public.news;
+DROP POLICY IF EXISTS "Admins can insert news" ON public.news;
+DROP POLICY IF EXISTS "Admins can update news" ON public.news;
+DROP POLICY IF EXISTS "Admins can delete news" ON public.news;
 
 -- Allow admins (from admin_users) to select and manage news
 CREATE POLICY "Admins can select news"
@@ -181,6 +204,8 @@ ALTER TABLE public.prayer_requests ENABLE ROW LEVEL SECURITY;
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Anyone can create prayer requests" ON public.prayer_requests;
 DROP POLICY IF EXISTS "Admins can view prayer requests" ON public.prayer_requests;
+DROP POLICY IF EXISTS "Admins can update prayer requests" ON public.prayer_requests;
+DROP POLICY IF EXISTS "Admins can delete prayer requests" ON public.prayer_requests;
 
 -- Create policies
 CREATE POLICY "Anyone can create prayer requests"
@@ -191,6 +216,17 @@ CREATE POLICY "Anyone can create prayer requests"
 CREATE POLICY "Admins can view prayer requests"
   ON public.prayer_requests
   FOR SELECT
+  USING (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()));
+
+CREATE POLICY "Admins can update prayer requests"
+  ON public.prayer_requests
+  FOR UPDATE
+  USING (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()))
+  WITH CHECK (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()));
+
+CREATE POLICY "Admins can delete prayer requests"
+  ON public.prayer_requests
+  FOR DELETE
   USING (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()));
 
 -- Create trigger for prayer_requests
@@ -229,6 +265,8 @@ ALTER TABLE public.membership_requests ENABLE ROW LEVEL SECURITY;
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Anyone can create membership requests" ON public.membership_requests;
 DROP POLICY IF EXISTS "Admins can view membership requests" ON public.membership_requests;
+DROP POLICY IF EXISTS "Admins can update membership requests" ON public.membership_requests;
+DROP POLICY IF EXISTS "Admins can delete membership requests" ON public.membership_requests;
 
 -- Create policies
 CREATE POLICY "Anyone can create membership requests"
@@ -239,6 +277,17 @@ CREATE POLICY "Anyone can create membership requests"
 CREATE POLICY "Admins can view membership requests"
   ON public.membership_requests
   FOR SELECT
+  USING (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()));
+
+CREATE POLICY "Admins can update membership requests"
+  ON public.membership_requests
+  FOR UPDATE
+  USING (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()))
+  WITH CHECK (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()));
+
+CREATE POLICY "Admins can delete membership requests"
+  ON public.membership_requests
+  FOR DELETE
   USING (auth.uid() IN (SELECT auth.uid() FROM public.admin_users WHERE email = auth.email()));
 
 -- Create trigger

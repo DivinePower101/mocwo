@@ -11,7 +11,7 @@ type Message = { sender: "ai" | "user"; content: React.ReactNode };
 
 export default function PrayerAI() {
   const [step, setStep] = useState(0);
-  const [method, setMethod] = useState<"sms" | "whatsapp" | "">("");
+  const [method, setMethod] = useState<"sms" | "whatsapp" | "email" | "">("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
@@ -248,10 +248,10 @@ export default function PrayerAI() {
                 {step === 0 && (
                   <div className="space-y-3">
                     <p className="font-semibold text-gray-900 text-sm">How would you like to receive updates?</p>
-                    <div className="flex gap-3">
+                    <div className="grid grid-cols-3 gap-2">
                       <Button
                         onClick={() => setMethod("sms")}
-                        className={`flex-1 transition-all duration-300 text-sm ${
+                        className={`transition-all duration-300 text-xs ${
                           method === "sms"
                             ? "bg-gradient-to-r from-blue-700 to-cyan-600 text-white shadow-lg"
                             : "bg-gray-100 text-gray-900 hover:bg-blue-50"
@@ -261,13 +261,23 @@ export default function PrayerAI() {
                       </Button>
                       <Button
                         onClick={() => setMethod("whatsapp")}
-                        className={`flex-1 transition-all duration-300 text-sm ${
+                        className={`transition-all duration-300 text-xs ${
                           method === "whatsapp"
                             ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
                             : "bg-gray-100 text-gray-900 hover:bg-green-50"
                         }`}
                       >
                         💬 WhatsApp
+                      </Button>
+                      <Button
+                        onClick={() => setMethod("email")}
+                        className={`transition-all duration-300 text-xs ${
+                          method === "email"
+                            ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                            : "bg-gray-100 text-gray-900 hover:bg-purple-50"
+                        }`}
+                      >
+                        📧 Email
                       </Button>
                     </div>
                     <Button
