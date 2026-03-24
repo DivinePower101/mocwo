@@ -139,14 +139,20 @@ const ImageCarousel = () => {
       }}
     >
       <style>{`
-        @keyframes fadeInScale {
-          from {
+        @keyframes bounceSpring {
+          0% {
             opacity: 0;
-            transform: scale(1.05);
+            transform: scale(0.8) translateY(30px);
           }
-          to {
+          50% {
+            transform: scale(1.02);
+          }
+          70% {
+            transform: scale(0.98);
+          }
+          100% {
             opacity: 1;
-            transform: scale(1);
+            transform: scale(1) translateY(0);
           }
         }
         @keyframes slideIn {
@@ -170,7 +176,7 @@ const ImageCarousel = () => {
           }
         }
         .carousel-image {
-          animation: fadeInScale 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          animation: bounceSpring 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
         .carousel-btn {
           animation: slideIn 0.4s ease-out forwards;
