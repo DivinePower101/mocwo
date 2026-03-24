@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { verifyAdmin } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -211,17 +212,11 @@ const Admin = () => {
   const checkAuthState = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session?.user?.email) {
         // Verify admin status using backend API (bypasses RLS)
-        const verifyRes = await fetch('/api/verify-admin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: session.user.email })
-        });
+        const verifyData = await verifyAdmin(session.user.email);
 
-        const verifyData = await verifyRes.json();
-
-        if (verifyRes.ok && verifyData.isAdmin) {
+        if (verifyData.success && verifyData.data?.isAdmin) {
           setIsAuthenticated(true);
         } else {
           // if user exists but doesn't meet criteria, ensure we sign out as a safety measure
@@ -235,7 +230,7 @@ const Admin = () => {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoginError("");
     try {
@@ -246,16 +241,10 @@ const Admin = () => {
 
       if (error) throw error;
 
-      // Verify admin status using backend API (bypasses RLS)
-      const verifyRes = await fetch('/api/verify-admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginForm.email })
-      });
+      // Verify admin status
+      const verifyData = await verifyAdmin(loginForm.email);
 
-      const verifyData = await verifyRes.json();
-
-      if (verifyRes.ok && verifyData.isAdmin) {
+      if (verifyData.success && verifyData.data?.isAdmin) {
         setIsAuthenticated(true);
         setLoginForm({ email: "", password: "" });
         toast({
@@ -267,7 +256,7 @@ const Admin = () => {
         setLoginError(verifyData.error || "Unauthorized access");
       }
     } catch (error: any) {
-      setLoginError(error.message);
+      setLoginError(error.message || "Login failed");
     }
   };
 
@@ -281,7 +270,7 @@ const Admin = () => {
     setPreAuthError("");
   };
 
-  const handlePreAuth = (e: React.FormEvent) => {
+  const handlePreAuth = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setPreAuthError("");
     
@@ -585,7 +574,7 @@ const Admin = () => {
                   id="email"
                   type="email"
                   value={loginForm.email}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))
                   required
                   placeholder="Enter your email"
                 />
@@ -596,7 +585,7 @@ const Admin = () => {
                   id="password"
                   type="password"
                   value={loginForm.password}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                  onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))
                   required
                   placeholder="Enter your password"
                 />
