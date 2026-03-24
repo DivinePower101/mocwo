@@ -12,8 +12,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Trash2, Edit2, Plus } from "lucide-react";
 
 const Admin = () => {
+  const [preAuthPassed, setPreAuthPassed] = useState(false);
+  const [preAuthAnswer, setPreAuthAnswer] = useState("");
+  const [preAuthError, setPreAuthError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [loginError, setLoginError] = useState("");
   const [partnerships, setPartnerships] = useState([]);
   const [membershipRequests, setMembershipRequests] = useState([]);
   const [prayerRequests, setPrayerRequests] = useState<any[]>([]);
@@ -205,34 +209,35 @@ const Admin = () => {
   };
 
   const checkAuthState = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      // Additional check if user is admin
-      const { data: adminUser } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', session.user.email)
-        .single();
-      
-      // require active admin with matching auth UID and admin role
-      if (
-        adminUser &&
-        adminUser.is_active === true &&
-        adminUser.role === 'admin'
-        // Temporarily disabled auth_uid check until column is added
-        // && adminUser.auth_uid === session.user.id
-      ) {
-        setIsAuthenticated(true);
-      } else {
-        // if user exists but doesn't meet criteria, ensure we sign out as a safety measure
-        try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
-        setIsAuthenticated(false);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Verify admin status using backend API (bypasses RLS)
+        const verifyRes = await fetch('/api/verify-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: session.user.email })
+        });
+
+        const verifyData = await verifyRes.json();
+
+        if (verifyRes.ok && verifyData.isAdmin) {
+          setIsAuthenticated(true);
+        } else {
+          // if user exists but doesn't meet criteria, ensure we sign out as a safety measure
+          try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
+          setIsAuthenticated(false);
+        }
       }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
     }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError("");
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginForm.email,
@@ -241,46 +246,52 @@ const Admin = () => {
 
       if (error) throw error;
 
-      // Check if user is admin
-      const { data: adminUser } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', loginForm.email)
-        .single();
+      // Verify admin status using backend API (bypasses RLS)
+      const verifyRes = await fetch('/api/verify-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginForm.email })
+      });
 
-      // get current session user id to compare with stored auth_uid
-      const { data: { session } } = await supabase.auth.getSession();
-      const currentUid = session?.user?.id || null;
+      const verifyData = await verifyRes.json();
 
-      if (
-        adminUser &&
-        adminUser.is_active === true &&
-        adminUser.role === 'admin'
-        // Temporarily disabled auth_uid check until column is added
-        // && adminUser.auth_uid === currentUid
-      ) {
+      if (verifyRes.ok && verifyData.isAdmin) {
         setIsAuthenticated(true);
+        setLoginForm({ email: "", password: "" });
         toast({
           title: "Login successful",
           description: "Welcome to the admin dashboard",
         });
       } else {
         await supabase.auth.signOut();
-        throw new Error("Unauthorized access");
+        setLoginError(verifyData.error || "Unauthorized access");
       }
     } catch (error: any) {
-      toast({
-        title: "Login failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      setLoginError(error.message);
     }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsAuthenticated(false);
+    setPreAuthPassed(false);
     setLoginForm({ email: "", password: "" });
+    setLoginError("");
+    setPreAuthAnswer("");
+    setPreAuthError("");
+  };
+
+  const handlePreAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPreAuthError("");
+    
+    if (preAuthAnswer.toLowerCase().trim() === "revprince") {
+      setPreAuthPassed(true);
+      setPreAuthAnswer("");
+    } else {
+      setPreAuthError("Access denied");
+      setPreAuthAnswer("");
+    }
   };
 
   const fetchPartnerships = async () => {
@@ -511,6 +522,45 @@ const Admin = () => {
     }
   };
 
+  // Pre-authentication gate
+  if (!preAuthPassed) {
+    return (
+      <div className="min-h-screen bg-background fixed inset-0 flex items-center justify-center">
+        <div className="w-full h-full bg-black/50 absolute inset-0" />
+        <Card className="w-full max-w-md border-0 shadow-divine z-50 relative">
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="text-7xl mb-6">🤔</div>
+              <h2 className="text-2xl font-bold mb-4">Who sent you here?</h2>
+              <form onSubmit={handlePreAuth} className="space-y-4">
+                <Input
+                  type="text"
+                  placeholder="Enter the answer"
+                  value={preAuthAnswer}
+                  onChange={(e) => setPreAuthAnswer(e.target.value)}
+                  className="text-center text-lg"
+                  autoFocus
+                  required
+                />
+                {preAuthError && (
+                  <div className="text-red-500 font-semibold text-center pt-2">
+                    {preAuthError}
+                  </div>
+                )}
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-royal text-primary-foreground text-lg py-6"
+                >
+                  Submit
+                </Button>
+              </form>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen pt-16 bg-background flex items-center justify-center">
@@ -520,9 +570,15 @@ const Admin = () => {
               <Lock className="w-8 h-8 text-primary-foreground" />
             </div>
             <CardTitle className="text-2xl">Admin Login</CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">Enter your credentials to access the dashboard</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
+              {loginError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                  {loginError}
+                </div>
+              )}
               <div>
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -531,6 +587,7 @@ const Admin = () => {
                   value={loginForm.email}
                   onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
                   required
+                  placeholder="Enter your email"
                 />
               </div>
               <div>
@@ -541,6 +598,7 @@ const Admin = () => {
                   value={loginForm.password}
                   onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
                   required
+                  placeholder="Enter your password"
                 />
               </div>
               <Button type="submit" className="w-full bg-gradient-royal text-primary-foreground">
@@ -560,7 +618,7 @@ const Admin = () => {
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-primary-foreground">Admin Dashboard</h1>
-            <p className="text-primary-foreground/80">Manage partnerships and church operations</p>
+            <p className="text-primary-foreground/80">Manage all church operations</p>
           </div>
           <Button onClick={handleLogout} variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
             Logout
@@ -569,8 +627,8 @@ const Admin = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card className="border-0 shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -578,31 +636,7 @@ const Admin = () => {
                   <p className="text-sm text-muted-foreground">Total Partnerships</p>
                   <p className="text-3xl font-bold text-primary">{stats.totalPartnerships}</p>
                 </div>
-                <Users className="w-12 h-12 text-primary opacity-60" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-3xl font-bold text-primary">${stats.totalAmount.toLocaleString()}</p>
-                </div>
-                <DollarSign className="w-12 h-12 text-primary opacity-60" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending Applications</p>
-                  <p className="text-3xl font-bold text-primary">{stats.pendingApplications}</p>
-                </div>
-                <Calendar className="w-12 h-12 text-primary opacity-60" />
+                <CreditCard className="w-12 h-12 text-primary opacity-60" />
               </div>
             </CardContent>
           </Card>
@@ -623,10 +657,10 @@ const Admin = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Pending Members</p>
-                  <p className="text-3xl font-bold text-primary">{stats.pendingMembers}</p>
+                  <p className="text-sm text-muted-foreground">Prayer Requests</p>
+                  <p className="text-3xl font-bold text-primary">{prayerRequests.length}</p>
                 </div>
-                <Calendar className="w-12 h-12 text-primary opacity-60" />
+                <Heart className="w-12 h-12 text-primary opacity-60" />
               </div>
             </CardContent>
           </Card>
@@ -635,8 +669,8 @@ const Admin = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Approved Members</p>
-                  <p className="text-3xl font-bold text-primary">{stats.approvedMembers}</p>
+                  <p className="text-sm text-muted-foreground">News Articles</p>
+                  <p className="text-3xl font-bold text-primary">{newsItems.length}</p>
                 </div>
                 <TrendingUp className="w-12 h-12 text-primary opacity-60" />
               </div>
@@ -644,538 +678,120 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Partnerships Table */}
-        <Card className="border-0 shadow-divine">
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <CreditCard className="w-6 h-6 mr-2" />
-              Partnership Applications
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Payment Method</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {partnerships.map((partnership: any) => (
-                    <TableRow key={partnership.id}>
-                      <TableCell className="font-medium">{partnership.name}</TableCell>
-                      <TableCell>{partnership.email}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{partnership.level}</Badge>
-                      </TableCell>
-                      <TableCell>${partnership.amount}</TableCell>
-                      <TableCell>{partnership.payment_method}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={partnership.status === 'approved' ? 'default' : 
-                                  partnership.status === 'rejected' ? 'destructive' : 'secondary'}
-                        >
-                          {partnership.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(partnership.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="space-x-2">
-                        {partnership.status === 'pending' && (
-                          <>
-                            <Button 
-                              size="sm" 
-                              onClick={() => updatePartnershipStatus(partnership.id, 'approved')}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              Approve
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => updatePartnershipStatus(partnership.id, 'rejected')}
-                            >
-                              Reject
-                            </Button>
-                          </>
-                        )}
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => deletePartnership(partnership.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Membership Requests Table */}
-        <Card className="border-0 shadow-divine mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <Users className="w-6 h-6 mr-2" />
-              Membership Requests
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedMember ? (
-              <div className="space-y-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setSelectedMember(null)}
-                  className="mb-4"
-                >
-                  ← Back to List
-                </Button>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted p-6 rounded-lg">
-                  <div>
-                    <p className="text-sm text-muted-foreground">First Name</p>
-                    <p className="text-lg font-semibold">{selectedMember.first_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Last Name</p>
-                    <p className="text-lg font-semibold">{selectedMember.last_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="text-lg font-semibold">{selectedMember.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Phone</p>
-                    <p className="text-lg font-semibold">{selectedMember.phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Date of Birth</p>
-                    <p className="text-lg font-semibold">{selectedMember.date_of_birth || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Gender</p>
-                    <p className="text-lg font-semibold">{selectedMember.gender || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Marital Status</p>
-                    <p className="text-lg font-semibold">{selectedMember.marital_status || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Membership Type</p>
-                    <p className="text-lg font-semibold">{selectedMember.membership_type || 'N/A'}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-muted-foreground">Address</p>
-                    <p className="text-lg font-semibold">{selectedMember.address || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">City</p>
-                    <p className="text-lg font-semibold">{selectedMember.city || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">State</p>
-                    <p className="text-lg font-semibold">{selectedMember.state || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Country</p>
-                    <p className="text-lg font-semibold">{selectedMember.country || 'N/A'}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-muted-foreground">Message</p>
-                    <p className="text-lg font-semibold">{selectedMember.message || 'No message'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge 
-                      variant={selectedMember.status === 'approved' ? 'default' : 
-                              selectedMember.status === 'rejected' ? 'destructive' : 'secondary'}
-                      className="text-base"
-                    >
-                      {selectedMember.status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Submitted</p>
-                    <p className="text-lg font-semibold">{new Date(selectedMember.created_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                {selectedMember.status === 'pending' && (
-                  <div className="flex gap-3 mt-6">
-                    <Button 
-                      onClick={() => updateMembershipStatus(selectedMember.id, 'approved')}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      Approve
-                    </Button>
-                    <Button 
-                      variant="destructive"
-                      onClick={() => updateMembershipStatus(selectedMember.id, 'rejected')}
-                    >
-                      Reject
-                    </Button>
-                    <Button 
-                      variant="ghost"
-                      onClick={() => {
-                        deleteMembershipRequest(selectedMember.id);
-                        setSelectedMember(null);
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="mr-2 w-4 h-4" />
-                      Delete
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Membership Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {membershipRequests.map((member: any) => (
-                      <TableRow key={member.id}>
-                        <TableCell className="font-medium">{member.first_name} {member.last_name}</TableCell>
-                        <TableCell>{member.email}</TableCell>
-                        <TableCell>{member.phone}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{member.membership_type || 'N/A'}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={member.status === 'approved' ? 'default' : 
-                                    member.status === 'rejected' ? 'destructive' : 'secondary'}
-                          >
-                            {member.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(member.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="space-x-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => setSelectedMember(member)}
-                          >
-                            View Details
-                          </Button>
-                          {member.status === 'pending' && (
-                            <>
-                              <Button 
-                                size="sm" 
-                                onClick={() => updateMembershipStatus(member.id, 'approved')}
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                              >
-                                Approve
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                onClick={() => updateMembershipStatus(member.id, 'rejected')}
-                              >
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => deleteMembershipRequest(member.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {membershipRequests.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No membership requests yet
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Prayer Requests */}
-        <Card className="border-0 shadow-divine mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <Heart className="w-6 h-6 mr-2" />
-              Prayer Requests
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedPrayer ? (
+        {/* Main Dashboard - Component Cards with CTAs */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Partnerships Card */}
+          <Card className="border-0 shadow-divine hover:shadow-lg transition-shadow cursor-pointer">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
+                Partnerships
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <Button variant="outline" onClick={() => setSelectedPrayer(null)} className="mb-6">
-                  ← Back to List
-                </Button>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Name</p>
-                    <p className="text-lg font-semibold">{selectedPrayer.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Phone</p>
-                    <p className="text-lg font-semibold">{selectedPrayer.phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Location</p>
-                    <p className="text-lg font-semibold">{selectedPrayer.location || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Method</p>
-                    <Badge variant="outline" className="text-base">
-                      {selectedPrayer.method?.toUpperCase() || 'SMS'}
-                    </Badge>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-muted-foreground">Prayer Request</p>
-                    <p className="text-base font-semibold whitespace-pre-wrap">{selectedPrayer.prayer_text}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge 
-                      variant={selectedPrayer.status === 'processed' ? 'default' : 
-                              selectedPrayer.status === 'failed' ? 'destructive' : 'secondary'}
-                      className="text-base"
-                    >
-                      {selectedPrayer.status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Submitted</p>
-                    <p className="text-lg font-semibold">{new Date(selectedPrayer.created_at).toLocaleString()}</p>
-                  </div>
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-muted-foreground">Total</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.totalPartnerships}</p>
                 </div>
-                {selectedPrayer.status === 'received' && (
-                  <div className="flex gap-3 mt-6">
-                    <Button 
-                      onClick={() => updatePrayerStatus(selectedPrayer.id, 'processed')}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      Mark as Processed
-                    </Button>
-                    <Button 
-                      variant="destructive"
-                      onClick={() => updatePrayerStatus(selectedPrayer.id, 'failed')}
-                    >
-                      Mark as Failed
-                    </Button>
-                    <Button 
-                      variant="ghost"
-                      onClick={() => {
-                        deletePrayerRequest(selectedPrayer.id);
-                        setSelectedPrayer(null);
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="mr-2 w-4 h-4" />
-                      Delete
-                    </Button>
-                  </div>
-                )}
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <Badge variant="secondary">{stats.pendingApplications}</Badge>
+                </div>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {prayerRequests.map((prayer: any) => (
-                      <TableRow key={prayer.id}>
-                        <TableCell className="font-medium">{prayer.name}</TableCell>
-                        <TableCell>{prayer.phone}</TableCell>
-                        <TableCell>{prayer.location || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{prayer.method?.toUpperCase() || 'SMS'}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={prayer.status === 'processed' ? 'default' : 
-                                    prayer.status === 'failed' ? 'destructive' : 'secondary'}
-                          >
-                            {prayer.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(prayer.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="space-x-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => setSelectedPrayer(prayer)}
-                          >
-                            View Details
-                          </Button>
-                          {prayer.status === 'received' && (
-                            <>
-                              <Button 
-                                size="sm" 
-                                onClick={() => updatePrayerStatus(prayer.id, 'processed')}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                              >
-                                Processed
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                onClick={() => updatePrayerStatus(prayer.id, 'failed')}
-                              >
-                                Failed
-                              </Button>
-                            </>
-                          )}
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => deletePrayerRequest(prayer.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {prayerRequests.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No prayer requests yet
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-divine mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <Users className="w-6 h-6 mr-2" />
-              News Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <form onSubmit={handleNewsSave} className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input id="title" value={newsForm.title} onChange={(e) => setNewsForm(prev => ({ ...prev, title: e.target.value }))} required />
-                </div>
-                <div>
-                  <Label htmlFor="excerpt">Excerpt</Label>
-                  <Input id="excerpt" value={newsForm.excerpt} onChange={(e) => setNewsForm(prev => ({ ...prev, excerpt: e.target.value }))} required />
-                </div>
-                <div>
-                  <Label htmlFor="content">Content</Label>
-                  <Textarea id="content" value={newsForm.content} onChange={(e: any) => setNewsForm(prev => ({ ...prev, content: e.target.value }))} rows={6} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="date">Date</Label>
-                    <Input id="date" type="date" value={newsForm.date} onChange={(e) => setNewsForm(prev => ({ ...prev, date: e.target.value }))} />
-                  </div>
-                  <div>
-                    <Label htmlFor="image">Image URL</Label>
-                    <Input id="image" value={newsForm.image} onChange={(e) => setNewsForm(prev => ({ ...prev, image: e.target.value }))} />
-                    <div className="mt-2">
-                      <Label htmlFor="imageFile">Upload Image</Label>
-                      <input id="imageFile" type="file" accept="image/*" onChange={handleImageUpload} className="mt-1" />
-                      {imageUploading && <div className="text-sm text-muted-foreground mt-2">Uploading...</div>}
-                      {newsForm.image && (
-                        <img src={newsForm.image} alt="preview" className="mt-2 max-w-full h-auto object-cover rounded" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="link">Link / Slug</Label>
-                  <Input id="link" value={newsForm.link} onChange={(e) => setNewsForm(prev => ({ ...prev, link: e.target.value }))} />
-                </div>
+              <Button 
+                onClick={() => window.location.href = '/admin-partnerships'}
+                className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:shadow-lg"
+              >
+                Manage Partnerships →
+              </Button>
+            </CardContent>
+          </Card>
 
-                <div className="flex items-center gap-3">
-                  <Button type="submit" className="bg-gradient-royal text-white">
-                    {editing ? (
-                      <><Edit2 className="mr-2" /> Update News</>
-                    ) : (
-                      <><Plus className="mr-2" /> Create News</>
-                    )}
-                  </Button>
-                  {editing && (
-                    <Button variant="outline" onClick={() => { setEditing(null); setNewsForm({ title: "", excerpt: "", content: "", date: "", image: "", link: "" }); }}>
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              </form>
-
+          {/* Memberships Card */}
+          <Card className="border-0 shadow-divine hover:shadow-lg transition-shadow cursor-pointer">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <Users className="w-5 h-5 mr-2 text-green-600" />
+                Memberships
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {newsItems.map(item => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.title}</TableCell>
-                          <TableCell>{item.date}</TableCell>
-                          <TableCell className="space-x-2">
-                            <Button size="sm" onClick={() => handleNewsEdit(item)}>
-                              <Edit2 />
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleNewsDelete(item.id)}>
-                              <Trash2 />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-muted-foreground">Total</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.totalMembers}</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <Badge variant="secondary">{stats.pendingMembers}</Badge>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <Button 
+                onClick={() => window.location.href = '/admin-memberships'}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:shadow-lg"
+              >
+                Manage Memberships →
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Prayer Requests Card */}
+          <Card className="border-0 shadow-divine hover:shadow-lg transition-shadow cursor-pointer">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <Heart className="w-5 h-5 mr-2 text-red-600" />
+                Prayer Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-muted-foreground">Total</p>
+                  <p className="text-2xl font-bold text-red-600">{prayerRequests.length}</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">Received</p>
+                  <Badge variant="secondary">{prayerRequests.filter((p: any) => p.status === 'received').length}</Badge>
+                </div>
+              </div>
+              <Button 
+                onClick={() => window.location.href = '/admin-prayers'}
+                className="w-full bg-gradient-to-r from-red-600 to-pink-500 text-white hover:shadow-lg"
+              >
+                View Prayers →
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* News Card */}
+          <Card className="border-0 shadow-divine hover:shadow-lg transition-shadow cursor-pointer">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg">
+                <TrendingUp className="w-5 h-5 mr-2 text-purple-600" />
+                News
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-muted-foreground">Articles</p>
+                  <p className="text-2xl font-bold text-purple-600">{newsItems.length}</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">Recent</p>
+                  <Badge variant="secondary">{newsItems.length > 0 ? 'Updated' : 'None'}</Badge>
+                </div>
+              </div>
+              <Button 
+                onClick={() => window.location.href = '/admin-news'}
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-500 text-white hover:shadow-lg"
+              >
+                Manage News →
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

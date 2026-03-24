@@ -31,6 +31,12 @@ import News from "./pages/News";
 import MembershipForm from "./pages/MembershipForm";
 import Leadership from "./pages/Leadership";
 
+// Admin Pages
+import AdminPartnerships from "./pages/AdminPartnerships";
+import AdminMemberships from "./pages/AdminMemberships";
+import AdminPrayers from "./pages/AdminPrayers";
+import AdminNews from "./pages/AdminNews";
+
 const queryClient = new QueryClient();
 
 export default function App() {
@@ -54,6 +60,10 @@ export default function App() {
             <Route path="/give/:type" element={<GivePage />} />
             <Route path="/live" element={<LivePage />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin-partnerships" element={<AdminPartnerships />} />
+            <Route path="/admin-memberships" element={<AdminMemberships />} />
+            <Route path="/admin-prayers" element={<AdminPrayers />} />
+            <Route path="/admin-news" element={<AdminNews />} />
 
             {/* FHC & Prayer */}
             <Route path="/fhc" element={<FHC />} />

@@ -20,8 +20,9 @@ app.use(bodyParser.json());
 app.use("/api/notifications", notificationRoutes);
 
 // Supabase initialization
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://foojbihdxdoflfjnhfjf.supabase.co";
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://foojbihdxdoflfjnhfjf.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // WhAPI.cloud configuration
@@ -409,6 +410,60 @@ app.post('/api/create-admin', async (req, res) => {
   } catch (err) {
     console.error('Error creating admin:', err?.response?.data || err.message || err);
     return res.status(500).json({ error: 'Failed to create admin', details: err?.response?.data || err.message });
+  }
+});
+
+// Verify if a user is an admin (bypass RLS)
+app.post('/api/verify-admin', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    // Query admin_users using service role key (bypasses RLS)
+    const checkRes = await axios.get(
+      `${SUPABASE_URL}/rest/v1/admin_users?email=eq.${encodeURIComponent(email)}&select=*`,
+      {
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (Array.isArray(checkRes.data) && checkRes.data.length > 0) {
+      const adminUser = checkRes.data[0];
+      
+      // Verify admin meets all criteria
+      if (adminUser.is_active === true && adminUser.role === 'admin') {
+        return res.status(200).json({ 
+          isAdmin: true, 
+          admin: {
+            email: adminUser.email,
+            fullName: adminUser.full_name,
+            role: adminUser.role,
+            isActive: adminUser.is_active
+          }
+        });
+      } else {
+        return res.status(403).json({ 
+          isAdmin: false, 
+          error: 'User exists but is not an active admin',
+          details: {
+            role: adminUser.role,
+            isActive: adminUser.is_active
+          }
+        });
+      }
+    } else {
+      return res.status(403).json({ isAdmin: false, error: 'User not found in admin records' });
+    }
+  } catch (err) {
+    console.error('Error verifying admin:', err?.response?.data || err.message || err);
+    return res.status(500).json({ error: 'Failed to verify admin', details: err?.response?.data || err.message });
   }
 });
 
