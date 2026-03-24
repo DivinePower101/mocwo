@@ -4,6 +4,8 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+console.log('[API] Using base URL:', API_BASE_URL);
+
 export interface PrayerRequestPayload {
   name: string;
   phone: string;
@@ -28,7 +30,10 @@ export async function sendPrayerRequest(
   payload: PrayerRequestPayload
 ): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/sendPrayer`, {
+    const url = `${API_BASE_URL}/api/sendPrayer`;
+    console.log('[API] Sending prayer to:', url);
+    
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -64,7 +69,10 @@ export async function sendPrayerRequest(
  */
 export async function verifyAdmin(email: string): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/verify-admin`, {
+    const url = `${API_BASE_URL}/api/verify-admin`;
+    console.log('[API] Verifying admin at:', url);
+    
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -85,6 +93,7 @@ export async function verifyAdmin(email: string): Promise<ApiResponse> {
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error('[API] Verification error:', errorMessage);
     return {
       success: false,
       error: errorMessage,
