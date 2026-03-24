@@ -574,7 +574,7 @@ const Admin = () => {
                   id="email"
                   type="email"
                   value={loginForm.email}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))
+                  onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
                   required
                   placeholder="Enter your email"
                 />
@@ -585,7 +585,7 @@ const Admin = () => {
                   id="password"
                   type="password"
                   value={loginForm.password}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))
+                  onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
                   required
                   placeholder="Enter your password"
                 />
