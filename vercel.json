@@ -4,15 +4,11 @@
   "installCommand": "npm install",
   "framework": "vite",
   "functions": {
-    "server.js": {
+    "api/index.js": {
       "runtime": "nodejs20.x"
     }
   },
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server.js"
-    },
     {
       "src": "/(.*)",
       "dest": "/index.html"
