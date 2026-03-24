@@ -111,6 +111,7 @@ const FlipCard = ({ point }: { point: { year: string; title: string; description
 
 const ImageCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAutoPlay, setIsAutoPlay] = useState(true);
   const carouselImages = [p1_1, p1_2, p1_3, p1_6, p1_7, p1_8, p1_9, p1_10, p1_11, p1_12, p1_13, p1_14, p1_15, p1_16];
 
   const nextImage = () => {
@@ -121,45 +122,118 @@ const ImageCarousel = () => {
     setCurrentIndex((prev) => (prev - 1 + carouselImages.length) % carouselImages.length);
   };
 
+  // Auto-play carousel
+  useEffect(() => {
+    if (!isAutoPlay) return;
+    const timer = setInterval(nextImage, 4000);
+    return () => clearInterval(timer);
+  }, [isAutoPlay]);
+
   return (
-    <div className="inline-block float-left mr-8 mb-4 w-full md:w-96 md:h-96 rounded-lg overflow-hidden shadow-xl md:mb-0 relative">
+    <div 
+      className="inline-block float-left mr-8 mb-4 w-full md:w-96 md:h-96 rounded-lg overflow-hidden shadow-2xl md:mb-0 relative group"
+      onMouseEnter={() => setIsAutoPlay(false)}
+      onMouseLeave={() => setIsAutoPlay(true)}
+      style={{
+        boxShadow: "0 10px 40px rgba(0, 0, 0, 0.3)"
+      }}
+    >
+      <style>{`
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: scale(1.05);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .carousel-image {
+          animation: fadeInScale 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .carousel-btn {
+          animation: slideIn 0.4s ease-out forwards;
+        }
+        .carousel-btn:nth-child(2) {
+          animation: slideInLeft 0.4s ease-out forwards;
+        }
+      `}</style>
+
       <img 
+        key={currentIndex}
         src={carouselImages[currentIndex]} 
         alt="Journey carousel" 
-        className="w-full h-full object-cover transition-opacity duration-500" 
+        className="carousel-image w-full h-full object-cover" 
       />
+      
+      {/* Overlay Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       
       {/* Previous Button */}
       <button
         onClick={prevImage}
-        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition-all duration-300 z-10"
+        className="carousel-btn absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 transition-all duration-300 z-10 hover:scale-110 hover:shadow-lg active:scale-95"
         aria-label="Previous image"
       >
-        <ChevronLeft className="w-5 h-5 text-gray-800" />
+        <ChevronLeft className="w-5 h-5" />
       </button>
 
       {/* Next Button */}
       <button
         onClick={nextImage}
-        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition-all duration-300 z-10"
+        className="carousel-btn absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 transition-all duration-300 z-10 hover:scale-110 hover:shadow-lg active:scale-95"
         aria-label="Next image"
       >
-        <ChevronRight className="w-5 h-5 text-gray-800" />
+        <ChevronRight className="w-5 h-5" />
       </button>
 
       {/* Indicator Dots */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
         {carouselImages.map((_, idx) => (
           <button
             key={idx}
-            onClick={() => setCurrentIndex(idx)}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              idx === currentIndex ? "bg-white w-6" : "bg-white/50 hover:bg-white/75"
+            onClick={() => {
+              setCurrentIndex(idx);
+              setIsAutoPlay(false);
+            }}
+            className={`rounded-full transition-all duration-500 cursor-pointer ${
+              idx === currentIndex 
+                ? "bg-white w-8 h-2 shadow-lg" 
+                : "bg-white/50 w-2 h-2 hover:bg-white/75 hover:scale-125"
             }`}
             aria-label={`Go to image ${idx + 1}`}
           />
         ))}
       </div>
+
+      {/* Auto-play Indicator */}
+      {isAutoPlay && (
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/70 px-3 py-1 rounded-full text-xs font-semibold text-gray-700 backdrop-blur-sm animate-pulse">
+          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+          Auto
+        </div>
+      )}
     </div>
   );
 };
