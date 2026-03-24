@@ -2,7 +2,7 @@
  * API client functions for prayer requests and other backend operations
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export interface PrayerRequestPayload {
   name: string;
@@ -28,7 +28,7 @@ export async function sendPrayerRequest(
   payload: PrayerRequestPayload
 ): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/sendPrayer`, {
+    const response = await fetch(`${API_BASE_URL}/api/sendPrayer`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -64,7 +64,7 @@ export async function sendPrayerRequest(
  */
 export async function verifyAdmin(email: string): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/verify-admin`, {
+    const response = await fetch(`${API_BASE_URL}/api/verify-admin`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
